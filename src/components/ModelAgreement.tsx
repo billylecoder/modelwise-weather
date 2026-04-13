@@ -1,17 +1,17 @@
 import { useMemo } from "react";
 import { ModelForecast, WeatherParam } from "@/data/mockWeatherData";
-import { ShieldCheck, ShieldAlert, ShieldQuestion } from "lucide-react";
 
-interface ModelAgreementProps {
+interface ModelConfidenceProps {
   models: ModelForecast[];
   parameter: WeatherParam;
   enabledModels: string[];
   forecastHour: number;
 }
 
-const ModelAgreement = ({ models, parameter, enabledModels, forecastHour }: ModelAgreementProps) => {
-  const { level, spread, values } = useMemo(() => {
+const ModelConfidence = ({ models, parameter, enabledModels, forecastHour }: ModelConfidenceProps) => {
+  const { level, values } = useMemo(() => {
     const active = models.filter((m) => enabledModels.includes(m.model));
+    if (active.length === 0) return { level: "high" as const, values: [] };
     const hourIndex = active[0]?.hours.indexOf(forecastHour) ?? 0;
     const vals = active.map((m) => ({ model: m.model, value: m[parameter][hourIndex], color: m.color }));
 
@@ -26,23 +26,24 @@ const ModelAgreement = ({ models, parameter, enabledModels, forecastHour }: Mode
     if (relSpread > 0.3) level = "low";
     else if (relSpread > 0.1) level = "medium";
 
-    return { level, spread: spread.toFixed(1), values: vals };
+    return { level, values: vals };
   }, [models, parameter, enabledModels, forecastHour]);
 
   const config = {
-    high: { icon: ShieldCheck, label: "High Agreement", color: "text-confidence-high", bg: "bg-confidence-high/10" },
-    medium: { icon: ShieldQuestion, label: "Moderate Spread", color: "text-confidence-medium", bg: "bg-confidence-medium/10" },
-    low: { icon: ShieldAlert, label: "Low Agreement", color: "text-confidence-low", bg: "bg-confidence-low/10" },
+    high: { label: "High Confidence", color: "text-confidence-high", bg: "bg-confidence-high/10", barWidth: "w-full" },
+    medium: { label: "Moderate Confidence", color: "text-confidence-medium", bg: "bg-confidence-medium/10", barWidth: "w-2/3" },
+    low: { label: "Low Confidence", color: "text-confidence-low", bg: "bg-confidence-low/10", barWidth: "w-1/3" },
   };
 
-  const { icon: Icon, label, color, bg } = config[level];
+  const { label, color, bg, barWidth } = config[level];
 
   return (
     <div className={`rounded-xl p-4 ${bg} border border-border/30`}>
       <div className="flex items-center gap-2 mb-3">
-        <Icon className={`w-5 h-5 ${color}`} />
         <span className={`font-heading font-semibold text-sm ${color}`}>{label}</span>
-        <span className="text-xs text-muted-foreground ml-auto">Spread: {spread}</span>
+      </div>
+      <div className="w-full h-1.5 rounded-full bg-muted/30 mb-3">
+        <div className={`h-full rounded-full ${barWidth} ${level === "high" ? "bg-confidence-high" : level === "medium" ? "bg-confidence-medium" : "bg-confidence-low"} transition-all`} />
       </div>
       <div className="flex gap-2">
         {values.map((v) => (
@@ -57,4 +58,4 @@ const ModelAgreement = ({ models, parameter, enabledModels, forecastHour }: Mode
   );
 };
 
-export default ModelAgreement;
+export default ModelConfidence;
