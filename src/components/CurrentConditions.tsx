@@ -1,4 +1,4 @@
-import { ModelForecast, WeatherParam, parameterConfig } from "@/data/mockWeatherData";
+import { ModelForecast, WeatherParam, parameterConfig } from "@/data/weatherApi";
 import { Thermometer, CloudRain, Wind, Gauge, Droplets, Zap } from "lucide-react";
 
 const iconMap: Record<string, React.ComponentType<any>> = {

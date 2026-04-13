@@ -1,4 +1,4 @@
-import { ModelForecast } from "@/data/mockWeatherData";
+import { ModelForecast } from "@/data/weatherApi";
 
 interface ModelToggleProps {
   models: ModelForecast[];
