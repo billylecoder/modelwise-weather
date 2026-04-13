@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Search, MapPin, X } from "lucide-react";
-import { Location, sampleLocations } from "@/data/mockWeatherData";
+import { Location } from "@/data/weatherApi";
 
 interface LocationSearchProps {
   currentLocation: Location;

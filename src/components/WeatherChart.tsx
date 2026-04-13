@@ -11,7 +11,7 @@ import {
   AreaChart,
   ReferenceLine,
 } from "recharts";
-import { ModelForecast, WeatherParam, parameterConfig } from "@/data/mockWeatherData";
+import { ModelForecast, WeatherParam, parameterConfig } from "@/data/weatherApi";
 
 interface WeatherChartProps {
   models: ModelForecast[];

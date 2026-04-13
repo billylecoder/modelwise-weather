@@ -1,4 +1,4 @@
-import { WeatherParam, parameterConfig } from "@/data/mockWeatherData";
+import { WeatherParam, parameterConfig } from "@/data/weatherApi";
 import {
   Thermometer,
   CloudRain,

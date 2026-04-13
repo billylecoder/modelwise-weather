@@ -1,4 +1,4 @@
-import { Location } from "@/data/mockWeatherData";
+import { Location } from "@/data/weatherApi";
 import { MapPin, Crosshair } from "lucide-react";
 
 interface WeatherMapProps {

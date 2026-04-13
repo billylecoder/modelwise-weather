@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { ModelForecast, WeatherParam } from "@/data/mockWeatherData";
+import { ModelForecast, WeatherParam } from "@/data/weatherApi";
 
 interface ModelConfidenceProps {
   models: ModelForecast[];
