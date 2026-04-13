@@ -65,13 +65,18 @@ function buildApiUrl(lat: number, lon: number, modelId: string): string {
   return `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=${params}&models=${modelId}&forecast_days=6&timezone=auto`;
 }
 
-function parseModelResponse(data: any, modelName: string, color: string): ModelForecast | null {
+interface ParseResult {
+  model: ModelForecast;
+  startTimeISO: string;
+}
+
+function parseModelResponse(data: any, modelName: string, color: string): ParseResult | null {
   const hourly = data.hourly;
   if (!hourly || !hourly.time || hourly.time.length === 0) return null;
 
-  const startTime = new Date(hourly.time[0]).getTime();
+  const startTimeISO = hourly.time[0] as string;
+  const startTime = new Date(startTimeISO).getTime();
 
-  // Build arrays, skipping null values at the tail (ICON-EU has shorter range)
   const rawHours: number[] = [];
   const rawTemp: number[] = [];
   const rawPrecip: number[] = [];
@@ -85,8 +90,6 @@ function parseModelResponse(data: any, modelName: string, color: string): ModelF
   for (let i = 0; i < hourly.time.length; i++) {
     const h = Math.round((new Date(hourly.time[i]).getTime() - startTime) / 3600000);
     if (h > MAX_HOURS) break;
-
-    // Skip if primary field (temperature) is null — model doesn't cover this hour
     if (hourly.temperature_2m[i] === null || hourly.temperature_2m[i] === undefined) break;
 
     rawHours.push(h);
@@ -103,21 +106,29 @@ function parseModelResponse(data: any, modelName: string, color: string): ModelF
   if (rawHours.length === 0) return null;
 
   return {
-    model: modelName,
-    color,
-    hours: rawHours,
-    temperature: rawTemp,
-    precipitation: rawPrecip,
-    windSpeed: rawWind,
-    windGusts: rawGusts,
-    pressure: rawPressure,
-    humidity: rawHumidity,
-    dewPoint: rawDew,
-    cape: rawCape,
+    startTimeISO,
+    model: {
+      model: modelName,
+      color,
+      hours: rawHours,
+      temperature: rawTemp,
+      precipitation: rawPrecip,
+      windSpeed: rawWind,
+      windGusts: rawGusts,
+      pressure: rawPressure,
+      humidity: rawHumidity,
+      dewPoint: rawDew,
+      cape: rawCape,
+    },
   };
 }
 
-export async function fetchWeatherData(lat: number, lon: number): Promise<ModelForecast[]> {
+export interface FetchResult {
+  models: ModelForecast[];
+  startTime: string;
+}
+
+export async function fetchWeatherData(lat: number, lon: number): Promise<FetchResult> {
   const fetches = MODEL_CONFIGS.map(async (cfg) => {
     try {
       const url = buildApiUrl(lat, lon, cfg.id);
@@ -132,9 +143,11 @@ export async function fetchWeatherData(lat: number, lon: number): Promise<ModelF
   });
 
   const all = await Promise.all(fetches);
-  const results = all.filter((m): m is ModelForecast => m !== null && m.hours.length > 0);
+  const valid = all.filter((r): r is ParseResult => r !== null && r.model.hours.length > 0);
+  const results = valid.map((r) => r.model);
+  const startTime = valid[0]?.startTimeISO ?? new Date().toISOString();
 
-  // Normalize to common hours (intersection based on shortest model)
+  // Normalize to common hours
   if (results.length > 1) {
     const minLen = Math.min(...results.map((r) => r.hours.length));
     const fields: (keyof ModelForecast)[] = ["hours", "temperature", "precipitation", "windSpeed", "windGusts", "pressure", "humidity", "dewPoint", "cape"];
@@ -145,5 +158,5 @@ export async function fetchWeatherData(lat: number, lon: number): Promise<ModelF
     }
   }
 
-  return results;
+  return { models: results, startTime };
 }
