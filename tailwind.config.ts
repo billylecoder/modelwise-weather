@@ -13,7 +13,22 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        heading: ["Sora", "sans-serif"],
+        body: ["Manrope", "sans-serif"],
+      },
       colors: {
+        chart: {
+          ecmwf: "hsl(var(--chart-ecmwf))",
+          gfs: "hsl(var(--chart-gfs))",
+          icon: "hsl(var(--chart-icon))",
+          nam: "hsl(var(--chart-nam))",
+        },
+        confidence: {
+          high: "hsl(var(--confidence-high))",
+          medium: "hsl(var(--confidence-medium))",
+          low: "hsl(var(--confidence-low))",
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
