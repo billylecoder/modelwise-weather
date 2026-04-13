@@ -9,7 +9,6 @@ import {
   ResponsiveContainer,
   Area,
   AreaChart,
-  ReferenceLine,
 } from "recharts";
 import { ModelForecast, WeatherParam, parameterConfig } from "@/data/weatherApi";
 
@@ -24,12 +23,13 @@ const WeatherChart = ({ models, parameter, enabledModels, showArea = false }: We
   const config = parameterConfig[parameter];
 
   const data = useMemo(() => {
+    if (models.length === 0) return [];
     const hours = models[0].hours;
     return hours.map((h, i) => {
       const point: Record<string, number> = { hour: h };
       const vals: number[] = [];
       models.forEach((m) => {
-        if (enabledModels.includes(m.model)) {
+        if (enabledModels.includes(m.model) && i < m[parameter].length) {
           point[m.model] = m[parameter][i];
           vals.push(m[parameter][i]);
         }
@@ -50,10 +50,7 @@ const WeatherChart = ({ models, parameter, enabledModels, showArea = false }: We
         <p className="text-xs text-muted-foreground font-body mb-2">+{label}h</p>
         {payload.map((entry: any) => (
           <div key={entry.dataKey} className="flex items-center gap-2 text-sm">
-            <div
-              className="w-2 h-2 rounded-full"
-              style={{ backgroundColor: entry.color }}
-            />
+            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
             <span className="font-medium font-heading text-xs">{entry.dataKey}</span>
             <span className="text-muted-foreground font-body ml-auto">
               {entry.value} {config.unit}
@@ -106,7 +103,6 @@ const WeatherChart = ({ models, parameter, enabledModels, showArea = false }: We
               />
             )
           )}
-          {/* Average line */}
           {activeModels.length > 1 && (
             showArea ? (
               <Area

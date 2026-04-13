@@ -57,70 +57,91 @@ const HOURLY_PARAMS = [
   "cape",
 ];
 
+const MAX_HOURS = 120;
+
 function buildApiUrl(lat: number, lon: number, modelId: string): string {
   const params = HOURLY_PARAMS.join(",");
-  return `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=${params}&models=${modelId}&forecast_days=7&timezone=auto`;
+  // Request 6 days to cover 120h+ then trim
+  return `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=${params}&models=${modelId}&forecast_days=6&timezone=auto`;
 }
 
 function parseModelResponse(data: any, modelName: string, color: string): ModelForecast | null {
   const hourly = data.hourly;
-  if (!hourly || !hourly.time) return null;
+  if (!hourly || !hourly.time || hourly.time.length === 0) return null;
 
   const startTime = new Date(hourly.time[0]).getTime();
-  const hours = hourly.time.map((t: string) => {
-    return Math.round((new Date(t).getTime() - startTime) / 3600000);
-  });
+
+  // Build arrays, skipping null values at the tail (ICON-EU has shorter range)
+  const rawHours: number[] = [];
+  const rawTemp: number[] = [];
+  const rawPrecip: number[] = [];
+  const rawWind: number[] = [];
+  const rawGusts: number[] = [];
+  const rawPressure: number[] = [];
+  const rawHumidity: number[] = [];
+  const rawDew: number[] = [];
+  const rawCape: number[] = [];
+
+  for (let i = 0; i < hourly.time.length; i++) {
+    const h = Math.round((new Date(hourly.time[i]).getTime() - startTime) / 3600000);
+    if (h > MAX_HOURS) break;
+
+    // Skip if primary field (temperature) is null — model doesn't cover this hour
+    if (hourly.temperature_2m[i] === null || hourly.temperature_2m[i] === undefined) break;
+
+    rawHours.push(h);
+    rawTemp.push(hourly.temperature_2m[i] ?? 0);
+    rawPrecip.push(hourly.precipitation?.[i] ?? 0);
+    rawWind.push(hourly.wind_speed_10m?.[i] ?? 0);
+    rawGusts.push(hourly.wind_gusts_10m?.[i] ?? 0);
+    rawPressure.push(hourly.pressure_msl?.[i] ?? 0);
+    rawHumidity.push(hourly.relative_humidity_2m?.[i] ?? 0);
+    rawDew.push(hourly.dew_point_2m?.[i] ?? 0);
+    rawCape.push(hourly.cape?.[i] ?? 0);
+  }
+
+  if (rawHours.length === 0) return null;
 
   return {
     model: modelName,
     color,
-    hours,
-    temperature: (hourly.temperature_2m ?? []).map((v: number | null) => v ?? 0),
-    precipitation: (hourly.precipitation ?? []).map((v: number | null) => v ?? 0),
-    windSpeed: (hourly.wind_speed_10m ?? []).map((v: number | null) => v ?? 0),
-    windGusts: (hourly.wind_gusts_10m ?? []).map((v: number | null) => v ?? 0),
-    pressure: (hourly.pressure_msl ?? []).map((v: number | null) => v ?? 0),
-    humidity: (hourly.relative_humidity_2m ?? []).map((v: number | null) => v ?? 0),
-    dewPoint: (hourly.dew_point_2m ?? []).map((v: number | null) => v ?? 0),
-    cape: (hourly.cape ?? []).map((v: number | null) => v ?? 0),
+    hours: rawHours,
+    temperature: rawTemp,
+    precipitation: rawPrecip,
+    windSpeed: rawWind,
+    windGusts: rawGusts,
+    pressure: rawPressure,
+    humidity: rawHumidity,
+    dewPoint: rawDew,
+    cape: rawCape,
   };
 }
 
 export async function fetchWeatherData(lat: number, lon: number): Promise<ModelForecast[]> {
-  const results: ModelForecast[] = [];
-
   const fetches = MODEL_CONFIGS.map(async (cfg) => {
     try {
       const url = buildApiUrl(lat, lon, cfg.id);
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      const parsed = parseModelResponse(data, cfg.name, cfg.color);
-      if (parsed) return parsed;
+      return parseModelResponse(data, cfg.name, cfg.color);
     } catch (e) {
       console.warn(`Failed to fetch ${cfg.name}:`, e);
+      return null;
     }
-    return null;
   });
 
   const all = await Promise.all(fetches);
-  for (const m of all) {
-    if (m) results.push(m);
-  }
+  const results = all.filter((m): m is ModelForecast => m !== null && m.hours.length > 0);
 
-  // Normalize to same length (shortest common hours array)
+  // Normalize to common hours (intersection based on shortest model)
   if (results.length > 1) {
     const minLen = Math.min(...results.map((r) => r.hours.length));
+    const fields: (keyof ModelForecast)[] = ["hours", "temperature", "precipitation", "windSpeed", "windGusts", "pressure", "humidity", "dewPoint", "cape"];
     for (const r of results) {
-      r.hours = r.hours.slice(0, minLen);
-      r.temperature = r.temperature.slice(0, minLen);
-      r.precipitation = r.precipitation.slice(0, minLen);
-      r.windSpeed = r.windSpeed.slice(0, minLen);
-      r.windGusts = r.windGusts.slice(0, minLen);
-      r.pressure = r.pressure.slice(0, minLen);
-      r.humidity = r.humidity.slice(0, minLen);
-      r.dewPoint = r.dewPoint.slice(0, minLen);
-      r.cape = r.cape.slice(0, minLen);
+      for (const f of fields) {
+        (r as any)[f] = (r as any)[f].slice(0, minLen);
+      }
     }
   }
 

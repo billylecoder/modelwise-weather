@@ -12,8 +12,21 @@ const ModelConfidence = ({ models, parameter, enabledModels, forecastHour }: Mod
   const { level, values } = useMemo(() => {
     const active = models.filter((m) => enabledModels.includes(m.model));
     if (active.length === 0) return { level: "high" as const, values: [] };
-    const hourIndex = active[0]?.hours.indexOf(forecastHour) ?? 0;
-    const vals = active.map((m) => ({ model: m.model, value: m[parameter][hourIndex], color: m.color }));
+
+    const vals = active.map((m) => {
+      // Find closest hour index instead of exact match
+      let hourIndex = m.hours.indexOf(forecastHour);
+      if (hourIndex === -1) {
+        // Find nearest hour
+        hourIndex = 0;
+        let minDiff = Math.abs(m.hours[0] - forecastHour);
+        for (let i = 1; i < m.hours.length; i++) {
+          const diff = Math.abs(m.hours[i] - forecastHour);
+          if (diff < minDiff) { minDiff = diff; hourIndex = i; }
+        }
+      }
+      return { model: m.model, value: m[parameter][hourIndex] ?? 0, color: m.color };
+    });
 
     const numbers = vals.map((v) => v.value);
     const min = Math.min(...numbers);
