@@ -1,4 +1,5 @@
 import { WeatherParam, parameterConfig } from "@/data/weatherApi";
+import { useI18n, paramTranslationKey } from "@/i18n";
 import {
   Thermometer,
   CloudRain,
@@ -23,6 +24,7 @@ interface ParameterSelectorProps {
 }
 
 const ParameterSelector = ({ selected, onChange }: ParameterSelectorProps) => {
+  const { t } = useI18n();
   const params = Object.entries(parameterConfig) as [WeatherParam, typeof parameterConfig[WeatherParam]][];
 
   return (
@@ -30,6 +32,7 @@ const ParameterSelector = ({ selected, onChange }: ParameterSelectorProps) => {
       {params.map(([key, config]) => {
         const Icon = iconMap[config.icon] || Thermometer;
         const isActive = selected === key;
+        const translationKey = paramTranslationKey[key];
         return (
           <button
             key={key}
@@ -41,7 +44,7 @@ const ParameterSelector = ({ selected, onChange }: ParameterSelectorProps) => {
             }`}
           >
             <Icon className="w-3.5 h-3.5" />
-            {config.label}
+            {translationKey ? t(translationKey) : config.label}
           </button>
         );
       })}

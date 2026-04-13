@@ -1,9 +1,14 @@
+import { useState } from "react";
 import { ModelForecast, parameterConfig, WeatherParam } from "@/data/weatherApi";
-import { Thermometer, CloudRain, Wind, Gauge, Droplets, Zap } from "lucide-react";
+import { Thermometer, CloudRain, Wind, Gauge, Droplets, Zap, ChevronDown, ChevronUp } from "lucide-react";
+import { useI18n, paramTranslationKey } from "@/i18n";
 
 const iconMap: Record<string, React.ComponentType<any>> = {
   Thermometer, CloudRain, Wind, Gauge, Droplets, Zap,
 };
+
+const BASIC_PARAMS: WeatherParam[] = ["temperature", "precipitation", "windSpeed", "humidity"];
+const ADVANCED_PARAMS: WeatherParam[] = ["windGusts", "pressure", "dewPoint", "cape"];
 
 interface ModelSelectorProps {
   models: ModelForecast[];
@@ -13,10 +18,42 @@ interface ModelSelectorProps {
 }
 
 const ModelSelector = ({ models, selectedModel, onSelectModel, forecastHour }: ModelSelectorProps) => {
+  const { t } = useI18n();
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const active = models.find((m) => m.model === selectedModel) ?? models[0];
-  const hourIndex = active.hours.indexOf(forecastHour);
+  
+  // Find closest hour index
+  let hourIndex = active.hours.indexOf(forecastHour);
+  if (hourIndex === -1) {
+    hourIndex = 0;
+    let minDiff = Math.abs(active.hours[0] - forecastHour);
+    for (let i = 1; i < active.hours.length; i++) {
+      const diff = Math.abs(active.hours[i] - forecastHour);
+      if (diff < minDiff) { minDiff = diff; hourIndex = i; }
+    }
+  }
 
-  const params: WeatherParam[] = ["temperature", "precipitation", "windSpeed", "windGusts", "pressure", "humidity", "dewPoint", "cape"];
+  const renderParams = (params: WeatherParam[]) => (
+    <div className="grid grid-cols-4 gap-2">
+      {params.map((param) => {
+        const config = parameterConfig[param];
+        const Icon = config.icon ? iconMap[config.icon] : null;
+        const value = active[param][hourIndex];
+        const translationKey = paramTranslationKey[param];
+
+        return (
+          <div key={param} className="glass-card rounded-xl p-3 text-center">
+            {Icon && <Icon className="w-4 h-4 text-primary mx-auto mb-1" />}
+            <div className="font-heading font-bold text-lg">{value}</div>
+            <div className="text-[10px] text-muted-foreground font-body">{config.unit}</div>
+            <div className="text-[10px] text-muted-foreground font-body mt-0.5">
+              {translationKey ? t(translationKey) : config.label}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
 
   return (
     <div className="space-y-3">
@@ -49,23 +86,20 @@ const ModelSelector = ({ models, selectedModel, onSelectModel, forecastHour }: M
         })}
       </div>
 
-      {/* Parameter grid for selected model */}
-      <div className="grid grid-cols-4 gap-2">
-        {params.map((param) => {
-          const config = parameterConfig[param];
-          const Icon = config.icon ? iconMap[config.icon] : null;
-          const value = active[param][hourIndex];
+      {/* Basic parameters */}
+      {renderParams(BASIC_PARAMS)}
 
-          return (
-            <div key={param} className="glass-card rounded-xl p-3 text-center">
-              {Icon && <Icon className="w-4 h-4 text-primary mx-auto mb-1" />}
-              <div className="font-heading font-bold text-lg">{value}</div>
-              <div className="text-[10px] text-muted-foreground font-body">{config.unit}</div>
-              <div className="text-[10px] text-muted-foreground font-body mt-0.5">{config.label}</div>
-            </div>
-          );
-        })}
-      </div>
+      {/* Advanced toggle */}
+      <button
+        onClick={() => setShowAdvanced(!showAdvanced)}
+        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors font-body mx-auto"
+      >
+        {showAdvanced ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+        {showAdvanced ? t("basic") : t("advanced")}
+      </button>
+
+      {/* Advanced parameters */}
+      {showAdvanced && renderParams(ADVANCED_PARAMS)}
     </div>
   );
 };
