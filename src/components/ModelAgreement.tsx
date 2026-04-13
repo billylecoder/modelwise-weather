@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { ModelForecast, WeatherParam } from "@/data/weatherApi";
+import { useI18n } from "@/i18n";
 
 interface ModelConfidenceProps {
   models: ModelForecast[];
@@ -9,15 +10,15 @@ interface ModelConfidenceProps {
 }
 
 const ModelConfidence = ({ models, parameter, enabledModels, forecastHour }: ModelConfidenceProps) => {
+  const { t } = useI18n();
+
   const { level, values } = useMemo(() => {
     const active = models.filter((m) => enabledModels.includes(m.model));
     if (active.length === 0) return { level: "high" as const, values: [] };
 
     const vals = active.map((m) => {
-      // Find closest hour index instead of exact match
       let hourIndex = m.hours.indexOf(forecastHour);
       if (hourIndex === -1) {
-        // Find nearest hour
         hourIndex = 0;
         let minDiff = Math.abs(m.hours[0] - forecastHour);
         for (let i = 1; i < m.hours.length; i++) {
@@ -43,9 +44,9 @@ const ModelConfidence = ({ models, parameter, enabledModels, forecastHour }: Mod
   }, [models, parameter, enabledModels, forecastHour]);
 
   const config = {
-    high: { label: "High Confidence", color: "text-confidence-high", bg: "bg-confidence-high/10", barWidth: "w-full" },
-    medium: { label: "Moderate Confidence", color: "text-confidence-medium", bg: "bg-confidence-medium/10", barWidth: "w-2/3" },
-    low: { label: "Low Confidence", color: "text-confidence-low", bg: "bg-confidence-low/10", barWidth: "w-1/3" },
+    high: { label: t("highConfidence"), color: "text-confidence-high", bg: "bg-confidence-high/10", barWidth: "w-full" },
+    medium: { label: t("moderateConfidence"), color: "text-confidence-medium", bg: "bg-confidence-medium/10", barWidth: "w-2/3" },
+    low: { label: t("lowConfidence"), color: "text-confidence-low", bg: "bg-confidence-low/10", barWidth: "w-1/3" },
   };
 
   const { label, color, bg, barWidth } = config[level];
