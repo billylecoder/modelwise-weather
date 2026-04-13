@@ -1,27 +1,51 @@
-import { useState } from "react";
-import { Cloud, Layers, Activity } from "lucide-react";
-import { models, defaultLocation, WeatherParam, Location } from "@/data/mockWeatherData";
+import { useState, useEffect, useCallback } from "react";
+import { Cloud, Layers, Activity, RefreshCw } from "lucide-react";
+import { models, defaultLocation, WeatherParam, Location, regenerateModels, getLastGeneratedAt } from "@/data/mockWeatherData";
 import LocationSearch from "@/components/LocationSearch";
 import WeatherMap from "@/components/WeatherMap";
 import WeatherChart from "@/components/WeatherChart";
-import ModelAgreement from "@/components/ModelAgreement";
+import ModelConfidence from "@/components/ModelAgreement";
 import ParameterSelector from "@/components/ParameterSelector";
 import ModelToggle from "@/components/ModelToggle";
 import ForecastTimeline from "@/components/ForecastTimeline";
-import CurrentConditions from "@/components/CurrentConditions";
+import ModelSelector from "@/components/ModelSelector";
+
+const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
 
 const Index = () => {
   const [location, setLocation] = useState<Location>(defaultLocation);
   const [selectedParam, setSelectedParam] = useState<WeatherParam>("temperature");
   const [enabledModels, setEnabledModels] = useState<string[]>(models.map((m) => m.model));
   const [timelineIndex, setTimelineIndex] = useState(0);
+  const [selectedModel, setSelectedModel] = useState(models[0].model);
+  const [lastRefresh, setLastRefresh] = useState(getLastGeneratedAt());
 
   const forecastHour = models[0].hours[timelineIndex] ?? 0;
+
+  const refreshData = useCallback(() => {
+    regenerateModels();
+    setLastRefresh(Date.now());
+  }, []);
+
+  // Auto-refresh every 6 hours
+  useEffect(() => {
+    const interval = setInterval(refreshData, SIX_HOURS_MS);
+    return () => clearInterval(interval);
+  }, [refreshData]);
 
   const toggleModel = (model: string) => {
     setEnabledModels((prev) =>
       prev.includes(model) ? prev.filter((m) => m !== model) : [...prev, model]
     );
+  };
+
+  const timeSinceRefresh = () => {
+    const diff = Date.now() - lastRefresh;
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "Just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    return `${hrs}h ago`;
   };
 
   return (
@@ -42,6 +66,10 @@ const Index = () => {
           <LocationSearch currentLocation={location} onLocationChange={setLocation} />
 
           <div className="flex items-center gap-4 text-xs text-muted-foreground font-body">
+            <button onClick={refreshData} className="flex items-center gap-1.5 hover:text-foreground transition-colors" title="Refresh data">
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>{timeSinceRefresh()}</span>
+            </button>
             <div className="flex items-center gap-1.5">
               <Layers className="w-3.5 h-3.5" />
               <span>{enabledModels.length} models</span>
@@ -56,12 +84,21 @@ const Index = () => {
 
       {/* Main content - split screen */}
       <div className="flex h-[calc(100vh-57px)]">
-        {/* Left: Map */}
-        <div className="w-1/2 p-4 flex flex-col gap-4">
-          <div className="flex-1">
+        {/* Left: Map + Model Detail */}
+        <div className="w-1/2 p-4 flex flex-col gap-4 overflow-y-auto">
+          <div className="flex-1 min-h-[300px]">
             <WeatherMap location={location} onLocationChange={setLocation} />
           </div>
-          <CurrentConditions models={models} forecastHour={forecastHour} />
+          {/* Single model selector with parameters */}
+          <div className="glass-card rounded-xl p-4">
+            <h2 className="font-heading font-semibold text-sm mb-3">Model Data</h2>
+            <ModelSelector
+              models={models}
+              selectedModel={selectedModel}
+              onSelectModel={setSelectedModel}
+              forecastHour={forecastHour}
+            />
+          </div>
         </div>
 
         {/* Right: Data panels */}
@@ -75,16 +112,16 @@ const Index = () => {
               hours={models[0].hours}
             />
 
-            {/* Model toggles */}
+            {/* Model toggles for charts */}
             <div className="glass-card rounded-xl p-4">
               <div className="flex items-center justify-between mb-3">
-                <h2 className="font-heading font-semibold text-sm">Weather Models</h2>
+                <h2 className="font-heading font-semibold text-sm">Chart Models</h2>
               </div>
               <ModelToggle models={models} enabledModels={enabledModels} onToggle={toggleModel} />
             </div>
 
-            {/* Model Agreement */}
-            <ModelAgreement
+            {/* Confidence */}
+            <ModelConfidence
               models={models}
               parameter={selectedParam}
               enabledModels={enabledModels}

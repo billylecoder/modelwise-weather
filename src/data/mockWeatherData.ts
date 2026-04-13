@@ -107,10 +107,10 @@ export const models: ModelForecast[] = [
 ];
 
 export const defaultLocation: Location = {
-  name: "New York City",
-  lat: 40.7128,
-  lon: -74.006,
-  country: "US",
+  name: "Kaisariani, Athens, Attica",
+  lat: 37.9637,
+  lon: 23.7584,
+  country: "GR",
 };
 
 export const sampleLocations: Location[] = [
@@ -134,5 +134,36 @@ export const parameterConfig: Record<WeatherParam, { label: string; unit: string
   pressure: { label: "Pressure", unit: "hPa", icon: "Gauge" },
   humidity: { label: "Humidity", unit: "%", icon: "Droplets" },
   dewPoint: { label: "Dew Point", unit: "°C", icon: "Thermometer" },
-  cape: { label: "CAPE", unit: "J/kg", icon: "Zap" },
+  cape: { label: "CAPE", unit: "J/kg", icon: "" },
 };
+
+// Data generation timestamp for refresh tracking
+let lastGeneratedAt = Date.now();
+
+export function getLastGeneratedAt() {
+  return lastGeneratedAt;
+}
+
+export function regenerateModels() {
+  models.forEach((m, i) => {
+    const bases = [22, 23, 21.5, 22.5];
+    const variances = [1.5, 2, 1.8, 2.5];
+    const chances = [0.2, 0.3, 0.25, 0.35];
+    const windBases = [12, 14, 11, 13];
+    const windVars = [8, 10, 7, 9];
+    const gustBases = [22, 25, 20, 23];
+    const gustVars = [12, 14, 11, 13];
+    const pressureBases = [1013, 1012, 1014, 1011];
+    const humidityBases = [65, 60, 68, 62];
+
+    m.temperature = generateTemp(bases[i], variances[i]);
+    m.precipitation = generatePrecip(chances[i]);
+    m.windSpeed = generateWind(windBases[i], windVars[i]);
+    m.windGusts = generateWind(gustBases[i], gustVars[i]);
+    m.pressure = generatePressure(pressureBases[i]);
+    m.humidity = generateHumidity(humidityBases[i]);
+    m.dewPoint = generateTemp(bases[i] - 8, variances[i] * 0.7);
+    m.cape = hours.map(() => +(Math.random() * [2000, 2500, 1800, 2200][i]).toFixed(0));
+  });
+  lastGeneratedAt = Date.now();
+}
