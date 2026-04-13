@@ -9,6 +9,7 @@ import {
   ResponsiveContainer,
   Area,
   AreaChart,
+  ReferenceLine,
 } from "recharts";
 import { ModelForecast, WeatherParam, parameterConfig } from "@/data/mockWeatherData";
 
@@ -26,11 +27,16 @@ const WeatherChart = ({ models, parameter, enabledModels, showArea = false }: We
     const hours = models[0].hours;
     return hours.map((h, i) => {
       const point: Record<string, number> = { hour: h };
+      const vals: number[] = [];
       models.forEach((m) => {
         if (enabledModels.includes(m.model)) {
           point[m.model] = m[parameter][i];
+          vals.push(m[parameter][i]);
         }
       });
+      if (vals.length > 0) {
+        point["Average"] = +(vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1);
+      }
       return point;
     });
   }, [models, parameter, enabledModels]);
@@ -44,7 +50,10 @@ const WeatherChart = ({ models, parameter, enabledModels, showArea = false }: We
         <p className="text-xs text-muted-foreground font-body mb-2">+{label}h</p>
         {payload.map((entry: any) => (
           <div key={entry.dataKey} className="flex items-center gap-2 text-sm">
-            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
+            <div
+              className="w-2 h-2 rounded-full"
+              style={{ backgroundColor: entry.color }}
+            />
             <span className="font-medium font-heading text-xs">{entry.dataKey}</span>
             <span className="text-muted-foreground font-body ml-auto">
               {entry.value} {config.unit}
@@ -56,7 +65,6 @@ const WeatherChart = ({ models, parameter, enabledModels, showArea = false }: We
   };
 
   const ChartComponent = showArea ? AreaChart : LineChart;
-  const DataComponent = showArea ? Area : Line;
 
   return (
     <div className="w-full h-[220px]">
@@ -95,6 +103,30 @@ const WeatherChart = ({ models, parameter, enabledModels, showArea = false }: We
                 strokeWidth={2}
                 dot={false}
                 activeDot={{ r: 4, strokeWidth: 0 }}
+              />
+            )
+          )}
+          {/* Average line */}
+          {activeModels.length > 1 && (
+            showArea ? (
+              <Area
+                type="monotone"
+                dataKey="Average"
+                stroke="hsl(0, 0%, 100%)"
+                fill="none"
+                strokeWidth={2}
+                strokeDasharray="6 3"
+                dot={false}
+              />
+            ) : (
+              <Line
+                type="monotone"
+                dataKey="Average"
+                stroke="hsl(0, 0%, 100%)"
+                strokeWidth={2}
+                strokeDasharray="6 3"
+                dot={false}
+                activeDot={{ r: 3, strokeWidth: 0 }}
               />
             )
           )}
