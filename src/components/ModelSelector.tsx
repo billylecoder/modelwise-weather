@@ -1,8 +1,8 @@
 import { ModelForecast, parameterConfig, WeatherParam } from "@/data/mockWeatherData";
-import { Thermometer, CloudRain, Wind, Gauge, Droplets } from "lucide-react";
+import { Thermometer, CloudRain, Wind, Gauge, Droplets, Zap } from "lucide-react";
 
 const iconMap: Record<string, React.ComponentType<any>> = {
-  Thermometer, CloudRain, Wind, Gauge, Droplets,
+  Thermometer, CloudRain, Wind, Gauge, Droplets, Zap,
 };
 
 interface ModelSelectorProps {

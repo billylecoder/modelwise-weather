@@ -1,8 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { Cloud, Layers, Activity, RefreshCw } from "lucide-react";
+import { Cloud, Layers, Activity, RefreshCw, MapPin } from "lucide-react";
 import { models, defaultLocation, WeatherParam, Location, regenerateModels, getLastGeneratedAt } from "@/data/mockWeatherData";
-import LocationSearch from "@/components/LocationSearch";
-import WeatherMap from "@/components/WeatherMap";
 import WeatherChart from "@/components/WeatherChart";
 import ModelConfidence from "@/components/ModelAgreement";
 import ParameterSelector from "@/components/ParameterSelector";
@@ -13,7 +11,7 @@ import ModelSelector from "@/components/ModelSelector";
 const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
 
 const Index = () => {
-  const [location, setLocation] = useState<Location>(defaultLocation);
+  const [location] = useState<Location>(defaultLocation);
   const [selectedParam, setSelectedParam] = useState<WeatherParam>("temperature");
   const [enabledModels, setEnabledModels] = useState<string[]>(models.map((m) => m.model));
   const [timelineIndex, setTimelineIndex] = useState(0);
@@ -27,7 +25,6 @@ const Index = () => {
     setLastRefresh(Date.now());
   }, []);
 
-  // Auto-refresh every 6 hours
   useEffect(() => {
     const interval = setInterval(refreshData, SIX_HOURS_MS);
     return () => clearInterval(interval);
@@ -44,15 +41,14 @@ const Index = () => {
     const mins = Math.floor(diff / 60000);
     if (mins < 1) return "Just now";
     if (mins < 60) return `${mins}m ago`;
-    const hrs = Math.floor(mins / 60);
-    return `${hrs}h ago`;
+    return `${Math.floor(mins / 60)}h ago`;
   };
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-xl sticky top-0 z-50">
-        <div className="max-w-[1800px] mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="max-w-[1400px] mx-auto px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center glow-primary">
               <Cloud className="w-5 h-5 text-primary-foreground" />
@@ -63,7 +59,11 @@ const Index = () => {
             </div>
           </div>
 
-          <LocationSearch currentLocation={location} onLocationChange={setLocation} />
+          <div className="flex items-center gap-2 text-sm font-body text-foreground">
+            <MapPin className="w-4 h-4 text-primary" />
+            <span className="font-heading font-semibold">{location.name}</span>
+            <span className="text-xs text-muted-foreground">({location.lat.toFixed(2)}°, {location.lon.toFixed(2)}°)</span>
+          </div>
 
           <div className="flex items-center gap-4 text-xs text-muted-foreground font-body">
             <button onClick={refreshData} className="flex items-center gap-1.5 hover:text-foreground transition-colors" title="Refresh data">
@@ -82,88 +82,72 @@ const Index = () => {
         </div>
       </header>
 
-      {/* Main content - split screen */}
-      <div className="flex h-[calc(100vh-57px)]">
-        {/* Left: Map + Model Detail */}
-        <div className="w-1/2 p-4 flex flex-col gap-4 overflow-y-auto">
-          <div className="flex-1 min-h-[300px]">
-            <WeatherMap location={location} onLocationChange={setLocation} />
-          </div>
-          {/* Single model selector with parameters */}
-          <div className="glass-card rounded-xl p-4">
-            <h2 className="font-heading font-semibold text-sm mb-3">Model Data</h2>
-            <ModelSelector
-              models={models}
-              selectedModel={selectedModel}
-              onSelectModel={setSelectedModel}
-              forecastHour={forecastHour}
-            />
-          </div>
+      {/* Main content */}
+      <div className="max-w-[1400px] mx-auto px-6 py-6 space-y-5">
+        {/* Top row: Timeline + Model Selector */}
+        <div className="grid grid-cols-2 gap-5">
+          <ForecastTimeline
+            value={timelineIndex}
+            max={models[0].hours.length - 1}
+            onChange={setTimelineIndex}
+            hours={models[0].hours}
+          />
+          <ModelConfidence
+            models={models}
+            parameter={selectedParam}
+            enabledModels={enabledModels}
+            forecastHour={forecastHour}
+          />
         </div>
 
-        {/* Right: Data panels */}
-        <div className="w-1/2 border-l border-border/50 overflow-y-auto">
-          <div className="p-4 space-y-4">
-            {/* Timeline */}
-            <ForecastTimeline
-              value={timelineIndex}
-              max={models[0].hours.length - 1}
-              onChange={setTimelineIndex}
-              hours={models[0].hours}
-            />
+        {/* Model data */}
+        <div className="glass-card rounded-xl p-5">
+          <h2 className="font-heading font-semibold text-sm mb-4">Model Data</h2>
+          <ModelSelector
+            models={models}
+            selectedModel={selectedModel}
+            onSelectModel={setSelectedModel}
+            forecastHour={forecastHour}
+          />
+        </div>
 
-            {/* Model toggles for charts */}
-            <div className="glass-card rounded-xl p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="font-heading font-semibold text-sm">Chart Models</h2>
-              </div>
-              <ModelToggle models={models} enabledModels={enabledModels} onToggle={toggleModel} />
-            </div>
+        {/* Chart controls */}
+        <div className="glass-card rounded-xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-heading font-semibold text-sm">Multi-Model Comparison</h2>
+            <ModelToggle models={models} enabledModels={enabledModels} onToggle={toggleModel} />
+          </div>
 
-            {/* Confidence */}
-            <ModelConfidence
+          <div className="mb-4">
+            <ParameterSelector selected={selectedParam} onChange={setSelectedParam} />
+          </div>
+
+          {/* Main chart */}
+          <div className="mb-2">
+            <h3 className="font-heading font-medium text-xs text-muted-foreground mb-2">
+              {selectedParam.charAt(0).toUpperCase() + selectedParam.slice(1).replace(/([A-Z])/g, " $1")} Forecast
+            </h3>
+            <WeatherChart
               models={models}
               parameter={selectedParam}
               enabledModels={enabledModels}
-              forecastHour={forecastHour}
             />
-
-            {/* Parameter selector */}
-            <div className="glass-card rounded-xl p-4">
-              <h2 className="font-heading font-semibold text-sm mb-3">Parameters</h2>
-              <ParameterSelector selected={selectedParam} onChange={setSelectedParam} />
-            </div>
-
-            {/* Main chart */}
-            <div className="glass-card rounded-xl p-4">
-              <h2 className="font-heading font-semibold text-sm mb-1">
-                {selectedParam.charAt(0).toUpperCase() + selectedParam.slice(1).replace(/([A-Z])/g, " $1")} Forecast
-              </h2>
-              <p className="text-xs text-muted-foreground font-body mb-3">Multi-model comparison</p>
-              <WeatherChart
-                models={models}
-                parameter={selectedParam}
-                enabledModels={enabledModels}
-              />
-            </div>
-
-            {/* Secondary charts */}
-            {selectedParam !== "temperature" && (
-              <div className="glass-card rounded-xl p-4">
-                <h2 className="font-heading font-semibold text-sm mb-1">Temperature</h2>
-                <p className="text-xs text-muted-foreground font-body mb-3">Reference overlay</p>
-                <WeatherChart models={models} parameter="temperature" enabledModels={enabledModels} />
-              </div>
-            )}
-
-            {selectedParam !== "precipitation" && (
-              <div className="glass-card rounded-xl p-4">
-                <h2 className="font-heading font-semibold text-sm mb-1">Precipitation</h2>
-                <p className="text-xs text-muted-foreground font-body mb-3">Rainfall comparison</p>
-                <WeatherChart models={models} parameter="precipitation" enabledModels={enabledModels} showArea />
-              </div>
-            )}
           </div>
+
+          {/* Secondary charts */}
+          {selectedParam !== "temperature" && (
+            <div className="mt-5 pt-5 border-t border-border/30">
+              <h3 className="font-heading font-medium text-xs text-muted-foreground mb-2">Temperature</h3>
+              <WeatherChart models={models} parameter="temperature" enabledModels={enabledModels} />
+            </div>
+          )}
+
+          {selectedParam !== "precipitation" && (
+            <div className="mt-5 pt-5 border-t border-border/30">
+              <h3 className="font-heading font-medium text-xs text-muted-foreground mb-2">Precipitation</h3>
+              <WeatherChart models={models} parameter="precipitation" enabledModels={enabledModels} showArea />
+            </div>
+          )}
         </div>
       </div>
     </div>

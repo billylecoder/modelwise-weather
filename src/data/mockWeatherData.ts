@@ -134,7 +134,7 @@ export const parameterConfig: Record<WeatherParam, { label: string; unit: string
   pressure: { label: "Pressure", unit: "hPa", icon: "Gauge" },
   humidity: { label: "Humidity", unit: "%", icon: "Droplets" },
   dewPoint: { label: "Dew Point", unit: "°C", icon: "Thermometer" },
-  cape: { label: "CAPE", unit: "J/kg", icon: "" },
+  cape: { label: "CAPE", unit: "J/kg", icon: "Zap" },
 };
 
 // Data generation timestamp for refresh tracking
