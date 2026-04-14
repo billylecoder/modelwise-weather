@@ -46,6 +46,30 @@ export const MODEL_CONFIGS = [
   { id: "icon_eu", name: "ICON-EU", color: "hsl(280, 70%, 60%)" },
 ];
 
+// ---------------------------------------------------------------------------
+// Backend URL — set VITE_BACKEND_URL to point at your FastAPI instance.
+// Falls back to direct Open-Meteo calls when the backend is unavailable.
+// ---------------------------------------------------------------------------
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL as string | undefined;
+
+export interface FetchResult {
+  models: ModelForecast[];
+  startTime: string;
+}
+
+// ---------------------------------------------------------------------------
+// Strategy 1: Fetch from FastAPI backend
+// ---------------------------------------------------------------------------
+async function fetchFromBackend(lat: number, lon: number): Promise<FetchResult> {
+  const url = `${BACKEND_URL}/api/forecast?lat=${lat}&lon=${lon}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Backend HTTP ${res.status}`);
+  return res.json();
+}
+
+// ---------------------------------------------------------------------------
+// Strategy 2: Direct Open-Meteo (fallback)
+// ---------------------------------------------------------------------------
 const HOURLY_PARAMS = [
   "temperature_2m",
   "precipitation",
@@ -61,7 +85,6 @@ const MAX_HOURS = 120;
 
 function buildApiUrl(lat: number, lon: number, modelId: string): string {
   const params = HOURLY_PARAMS.join(",");
-  // Request 6 days to cover 120h+ then trim
   return `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=${params}&models=${modelId}&forecast_days=6&timezone=auto`;
 }
 
@@ -123,12 +146,7 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
   };
 }
 
-export interface FetchResult {
-  models: ModelForecast[];
-  startTime: string;
-}
-
-export async function fetchWeatherData(lat: number, lon: number): Promise<FetchResult> {
+async function fetchDirectFromOpenMeteo(lat: number, lon: number): Promise<FetchResult> {
   const fetches = MODEL_CONFIGS.map(async (cfg) => {
     try {
       const url = buildApiUrl(lat, lon, cfg.id);
@@ -147,7 +165,6 @@ export async function fetchWeatherData(lat: number, lon: number): Promise<FetchR
   const results = valid.map((r) => r.model);
   const startTime = valid[0]?.startTimeISO ?? new Date().toISOString();
 
-  // Normalize to common hours
   if (results.length > 1) {
     const minLen = Math.min(...results.map((r) => r.hours.length));
     const fields: (keyof ModelForecast)[] = ["hours", "temperature", "precipitation", "windSpeed", "windGusts", "pressure", "humidity", "dewPoint", "cape"];
@@ -159,4 +176,18 @@ export async function fetchWeatherData(lat: number, lon: number): Promise<FetchR
   }
 
   return { models: results, startTime };
+}
+
+// ---------------------------------------------------------------------------
+// Public API — tries backend first, falls back to direct calls
+// ---------------------------------------------------------------------------
+export async function fetchWeatherData(lat: number, lon: number): Promise<FetchResult> {
+  if (BACKEND_URL) {
+    try {
+      return await fetchFromBackend(lat, lon);
+    } catch (e) {
+      console.warn("Backend unavailable, falling back to direct Open-Meteo:", e);
+    }
+  }
+  return fetchDirectFromOpenMeteo(lat, lon);
 }
