@@ -6,6 +6,7 @@ normalizes it into a unified structure, and serves it as a single JSON endpoint.
 from __future__ import annotations
 
 import asyncio
+import time
 from datetime import datetime, timezone
 from typing import Any
 
@@ -151,6 +152,17 @@ async def _fetch_model(client: httpx.AsyncClient, cfg: dict, lat: float, lon: fl
 
 
 # ---------------------------------------------------------------------------
+# Cache
+# ---------------------------------------------------------------------------
+CACHE_TTL = 600  # 10 minutes
+_cache: dict[str, tuple[float, ForecastResponse]] = {}
+
+
+def _cache_key(lat: float, lon: float) -> str:
+    return f"{round(lat, 2)}:{round(lon, 2)}"
+
+
+# ---------------------------------------------------------------------------
 # App
 # ---------------------------------------------------------------------------
 
@@ -170,6 +182,14 @@ async def get_forecast(
     lon: float = Query(DEFAULT_LON),
 ):
     """Fetch multi-model forecast, normalize to common hours, return unified JSON."""
+    key = _cache_key(lat, lon)
+    now = time.monotonic()
+
+    if key in _cache:
+        cached_at, cached_resp = _cache[key]
+        if now - cached_at < CACHE_TTL:
+            return cached_resp
+
     async with httpx.AsyncClient() as client:
         tasks = [_fetch_model(client, cfg, lat, lon) for cfg in MODEL_CONFIGS]
         results = await asyncio.gather(*tasks)
@@ -192,9 +212,12 @@ async def get_forecast(
         m.dewPoint = m.dewPoint[:min_len]
         m.cape = m.cape[:min_len]
 
-    start_time = datetime.now(timezone.utc).isoformat()
-
-    return ForecastResponse(models=models, startTime=start_time)
+    resp = ForecastResponse(
+        models=models,
+        startTime=datetime.now(timezone.utc).isoformat(),
+    )
+    _cache[key] = (now, resp)
+    return resp
 
 
 @app.get("/api/health")
