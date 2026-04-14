@@ -62,8 +62,9 @@ export interface FetchResult {
 // ---------------------------------------------------------------------------
 async function fetchFromBackend(lat: number, lon: number): Promise<FetchResult> {
   const url = `${BACKEND_URL}/api/forecast?lat=${lat}&lon=${lon}`;
-  const res = await fetch(url);
+  const res = await fetch(url, { signal: AbortSignal.timeout(20000) });
   if (!res.ok) throw new Error(`Backend HTTP ${res.status}`);
+  // Backend already normalizes — return as-is, no further processing needed
   return res.json();
 }
 
