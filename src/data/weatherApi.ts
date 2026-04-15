@@ -51,9 +51,10 @@ interface ModelConfig {
 }
 
 const MODEL_DEFS: ModelConfig[] = [
-  { id: "ecmwf_ifs025", name: "ECMWF", color: "hsl(200, 80%, 55%)", runs: [0, 6, 12, 18], delayHours: 6 },
-  { id: "gfs_seamless",  name: "GFS",   color: "hsl(140, 70%, 50%)", runs: [0, 6, 12, 18], delayHours: 5 },
-  { id: "gem_seamless",  name: "GEM",   color: "hsl(30, 90%, 55%)",  runs: [0, 12],        delayHours: 6 },
+  { id: "ecmwf_ifs025", name: "ECMWF",   color: "hsl(200, 80%, 55%)", runs: [0, 6, 12, 18], delayHours: 6 },
+  { id: "gfs_seamless",  name: "GFS",     color: "hsl(140, 70%, 50%)", runs: [0, 6, 12, 18], delayHours: 5 },
+  { id: "icon_seamless", name: "ICON-EU", color: "hsl(280, 70%, 60%)", runs: [0, 3, 6, 9, 12, 15, 18, 21], delayHours: 4 },
+  { id: "gem_seamless",  name: "GEM",     color: "hsl(30, 90%, 55%)",  runs: [0, 12],        delayHours: 6 },
 ];
 
 function getLatestRun(runs: number[], delayHours: number): number {
