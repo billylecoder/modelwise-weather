@@ -202,15 +202,16 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
 }
 
 async function fetchDirectFromOpenMeteo(lat: number, lon: number): Promise<FetchResult> {
-  const fetches = MODEL_CONFIGS.map(async (cfg) => {
+  const activeModels = getActiveModels();
+  const fetches = activeModels.map(async (cfg) => {
     try {
       const url = buildApiUrl(lat, lon, cfg.id);
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      return parseModelResponse(data, cfg.name, cfg.color);
+      return parseModelResponse(data, cfg.displayName, cfg.color);
     } catch (e) {
-      console.warn(`Failed to fetch ${cfg.name}:`, e);
+      console.warn(`Failed to fetch ${cfg.displayName}:`, e);
       return null;
     }
   });
