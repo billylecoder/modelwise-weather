@@ -39,12 +39,66 @@ export const parameterConfig: Record<WeatherParam, { label: string; unit: string
   cape: { label: "CAPE", unit: "J/kg", icon: "Zap" },
 };
 
-export const MODEL_CONFIGS = [
-  { id: "ecmwf_ifs025", name: "ECMWF", color: "hsl(200, 80%, 55%)" },
-  { id: "gfs_seamless", name: "GFS", color: "hsl(140, 70%, 50%)" },
-  { id: "icon_seamless", name: "ICON", color: "hsl(30, 90%, 55%)" },
-  { id: "icon_eu", name: "ICON-EU", color: "hsl(280, 70%, 60%)" },
+// ---------------------------------------------------------------------------
+// Run cycle detection — determines the latest available model run
+// ---------------------------------------------------------------------------
+interface ModelConfig {
+  id: string;
+  name: string;
+  color: string;
+  runs: number[];       // available run hours (UTC)
+  delayHours: number;   // hours after run time before data is typically available
+}
+
+const MODEL_DEFS: ModelConfig[] = [
+  { id: "ecmwf_ifs025", name: "ECMWF", color: "hsl(200, 80%, 55%)", runs: [0, 6, 12, 18], delayHours: 6 },
+  { id: "gfs_seamless",  name: "GFS",   color: "hsl(140, 70%, 50%)", runs: [0, 6, 12, 18], delayHours: 5 },
+  { id: "gem_seamless",  name: "GEM",   color: "hsl(30, 90%, 55%)",  runs: [0, 12],        delayHours: 6 },
 ];
+
+function getLatestRun(runs: number[], delayHours: number): number {
+  const now = new Date();
+  const utcHour = now.getUTCHours();
+  // Find the latest run whose data would be available by now
+  const sorted = [...runs].sort((a, b) => b - a);
+  for (const run of sorted) {
+    if (utcHour >= run + delayHours) return run;
+  }
+  // If none available today, use previous day's last run
+  return sorted[0];
+}
+
+function formatRun(run: number): string {
+  return `${String(run).padStart(2, "0")}z`;
+}
+
+export interface ModelWithRun {
+  id: string;
+  name: string;
+  displayName: string; // e.g. "GFS (12z)"
+  color: string;
+  run: number;
+}
+
+export function getActiveModels(): ModelWithRun[] {
+  return MODEL_DEFS.map((def) => {
+    const run = getLatestRun(def.runs, def.delayHours);
+    return {
+      id: def.id,
+      name: def.name,
+      displayName: `${def.name} (${formatRun(run)})`,
+      color: def.color,
+      run,
+    };
+  });
+}
+
+// Keep backward-compatible MODEL_CONFIGS shape for API calls
+export const MODEL_CONFIGS = MODEL_DEFS.map((d) => ({
+  id: d.id,
+  name: d.name,
+  color: d.color,
+}));
 
 // ---------------------------------------------------------------------------
 // Backend URL — set VITE_BACKEND_URL to point at your FastAPI instance.
@@ -148,15 +202,16 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
 }
 
 async function fetchDirectFromOpenMeteo(lat: number, lon: number): Promise<FetchResult> {
-  const fetches = MODEL_CONFIGS.map(async (cfg) => {
+  const activeModels = getActiveModels();
+  const fetches = activeModels.map(async (cfg) => {
     try {
       const url = buildApiUrl(lat, lon, cfg.id);
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      return parseModelResponse(data, cfg.name, cfg.color);
+      return parseModelResponse(data, cfg.displayName, cfg.color);
     } catch (e) {
-      console.warn(`Failed to fetch ${cfg.name}:`, e);
+      console.warn(`Failed to fetch ${cfg.displayName}:`, e);
       return null;
     }
   });
