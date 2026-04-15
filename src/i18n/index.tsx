@@ -36,6 +36,10 @@ const translations = {
     lowConfidence: "Low Confidence",
     parameters: "Parameters",
     date: "Date",
+    searchLocation: "Search city…",
+    locationNotFound: "Location not found",
+    locationError: "Failed to search locations",
+    searchingLocations: "Searching…",
   },
   el: {
     appName: "WeatherIntel",
@@ -70,6 +74,10 @@ const translations = {
     lowConfidence: "Χαμηλή Εμπιστοσύνη",
     parameters: "Παράμετροι",
     date: "Ημερομηνία",
+    searchLocation: "Αναζήτηση πόλης…",
+    locationNotFound: "Δεν βρέθηκε τοποθεσία",
+    locationError: "Αποτυχία αναζήτησης",
+    searchingLocations: "Αναζήτηση…",
   },
 } as const;
 
