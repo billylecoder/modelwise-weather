@@ -224,22 +224,16 @@ async def get_forecast(
     if not models:
         return ForecastResponse(models=[], startTime=datetime.now(timezone.utc).isoformat())
 
-    # Normalize to common length
-    min_len = min(len(m.hours) for m in models)
+    # Pad shorter models with None so all share the longest timeline
+    max_len = max(len(m.hours) for m in models)
+    longest_hours = max(models, key=lambda m: len(m.hours)).hours
+    fields = ["temperature", "precipitation", "windSpeed", "windGusts", "pressure", "humidity", "dewPoint", "cape", "temp850hPa", "temp500hPa", "apparentTemperature", "cloudCover"]
     for m in models:
-        m.hours = m.hours[:min_len]
-        m.temperature = m.temperature[:min_len]
-        m.precipitation = m.precipitation[:min_len]
-        m.windSpeed = m.windSpeed[:min_len]
-        m.windGusts = m.windGusts[:min_len]
-        m.pressure = m.pressure[:min_len]
-        m.humidity = m.humidity[:min_len]
-        m.dewPoint = m.dewPoint[:min_len]
-        m.cape = m.cape[:min_len]
-        m.temp850hPa = m.temp850hPa[:min_len]
-        m.temp500hPa = m.temp500hPa[:min_len]
-        m.apparentTemperature = m.apparentTemperature[:min_len]
-        m.cloudCover = m.cloudCover[:min_len]
+        if len(m.hours) < max_len:
+            pad = max_len - len(m.hours)
+            m.hours = longest_hours
+            for f in fields:
+                setattr(m, f, getattr(m, f) + [None] * pad)
 
     resp = ForecastResponse(
         models=models,
