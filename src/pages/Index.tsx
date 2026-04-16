@@ -185,7 +185,7 @@ const Index = () => {
 
           <div className="mb-2">
             <h3 className="font-heading font-medium text-xs text-muted-foreground mb-2">
-              {getParamLabel(selectedParam)} {t("forecast")}
+              {getParamLabel(selectedParam)}
             </h3>
             <WeatherChart models={models} parameter={selectedParam} enabledModels={enabledModels} />
           </div>
