@@ -35,6 +35,10 @@ HOURLY_PARAMS = [
     "relative_humidity_2m",
     "dew_point_2m",
     "cape",
+    "temperature_850hPa",
+    "temperature_500hPa",
+    "apparent_temperature",
+    "cloud_cover",
 ]
 
 MAX_HOURS = 120
@@ -57,6 +61,10 @@ class ModelForecast(BaseModel):
     humidity: list[float]
     dewPoint: list[float]
     cape: list[float]
+    temp850hPa: list[float | None]
+    temp500hPa: list[float | None]
+    apparentTemperature: list[float | None]
+    cloudCover: list[float | None]
 
 
 class ForecastResponse(BaseModel):
@@ -97,6 +105,10 @@ def _parse_model(data: dict[str, Any], name: str, color: str) -> ModelForecast |
     humidity: list[float] = []
     dew: list[float] = []
     cape: list[float] = []
+    temp850: list[float | None] = []
+    temp500: list[float | None] = []
+    apparent: list[float | None] = []
+    cloud: list[float | None] = []
 
     for i, t in enumerate(times):
         h = round((datetime.fromisoformat(t).timestamp() * 1000 - start_ms) / 3_600_000)
@@ -116,6 +128,15 @@ def _parse_model(data: dict[str, Any], name: str, color: str) -> ModelForecast |
         dew.append((hourly.get("dew_point_2m") or [])[i] or 0 if i < len(hourly.get("dew_point_2m", [])) else 0)
         cape.append((hourly.get("cape") or [])[i] or 0 if i < len(hourly.get("cape", [])) else 0)
 
+        t850_arr = hourly.get("temperature_850hPa") or []
+        temp850.append(t850_arr[i] if i < len(t850_arr) and t850_arr[i] is not None else None)
+        t500_arr = hourly.get("temperature_500hPa") or []
+        temp500.append(t500_arr[i] if i < len(t500_arr) and t500_arr[i] is not None else None)
+        app_arr = hourly.get("apparent_temperature") or []
+        apparent.append(app_arr[i] if i < len(app_arr) and app_arr[i] is not None else None)
+        cloud_arr = hourly.get("cloud_cover") or []
+        cloud.append(cloud_arr[i] if i < len(cloud_arr) and cloud_arr[i] is not None else None)
+
     if not hours:
         return None
 
@@ -131,6 +152,10 @@ def _parse_model(data: dict[str, Any], name: str, color: str) -> ModelForecast |
         humidity=humidity,
         dewPoint=dew,
         cape=cape,
+        temp850hPa=temp850,
+        temp500hPa=temp500,
+        apparentTemperature=apparent,
+        cloudCover=cloud,
     )
 
 
@@ -211,6 +236,10 @@ async def get_forecast(
         m.humidity = m.humidity[:min_len]
         m.dewPoint = m.dewPoint[:min_len]
         m.cape = m.cape[:min_len]
+        m.temp850hPa = m.temp850hPa[:min_len]
+        m.temp500hPa = m.temp500hPa[:min_len]
+        m.apparentTemperature = m.apparentTemperature[:min_len]
+        m.cloudCover = m.cloudCover[:min_len]
 
     resp = ForecastResponse(
         models=models,
