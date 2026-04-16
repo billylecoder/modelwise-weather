@@ -149,11 +149,11 @@ const HOURLY_PARAMS = [
   "cloud_cover",
 ];
 
-const MAX_HOURS = 120;
+const MAX_HOURS = 360;
 
 function buildApiUrl(lat: number, lon: number, modelId: string): string {
   const params = HOURLY_PARAMS.join(",");
-  return `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=${params}&models=${modelId}&forecast_days=6&timezone=auto`;
+  return `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=${params}&models=${modelId}&forecast_days=16&timezone=auto`;
 }
 
 interface ParseResult {
@@ -246,12 +246,19 @@ async function fetchDirectFromOpenMeteo(lat: number, lon: number): Promise<Fetch
   const results = valid.map((r) => r.model);
   const startTime = valid[0]?.startTimeISO ?? new Date().toISOString();
 
+  // Use the longest model's hours as the unified timeline
   if (results.length > 1) {
-    const minLen = Math.min(...results.map((r) => r.hours.length));
-    const fields: (keyof ModelForecast)[] = ["hours", "temperature", "precipitation", "windSpeed", "windGusts", "pressure", "humidity", "dewPoint", "cape", "temp850hPa", "temp500hPa", "apparentTemperature", "cloudCover"];
+    const maxLen = Math.max(...results.map((r) => r.hours.length));
+    const longestHours = results.find((r) => r.hours.length === maxLen)!.hours;
+    const fields: (keyof ModelForecast)[] = ["temperature", "precipitation", "windSpeed", "windGusts", "pressure", "humidity", "dewPoint", "cape", "temp850hPa", "temp500hPa", "apparentTemperature", "cloudCover"];
     for (const r of results) {
-      for (const f of fields) {
-        (r as any)[f] = (r as any)[f].slice(0, minLen);
+      if (r.hours.length < maxLen) {
+        // Pad shorter models with null
+        const padCount = maxLen - r.hours.length;
+        r.hours = longestHours;
+        for (const f of fields) {
+          (r as any)[f] = [...(r as any)[f], ...Array(padCount).fill(null)];
+        }
       }
     }
   }

@@ -41,7 +41,7 @@ HOURLY_PARAMS = [
     "cloud_cover",
 ]
 
-MAX_HOURS = 120
+MAX_HOURS = 360
 DEFAULT_LAT = 37.9637
 DEFAULT_LON = 23.7584
 
@@ -83,7 +83,7 @@ def _build_url(lat: float, lon: float, model_id: str) -> str:
         f"?latitude={lat}&longitude={lon}"
         f"&hourly={params}"
         f"&models={model_id}"
-        f"&forecast_days=6"
+        f"&forecast_days=16"
         f"&timezone=auto"
     )
 
