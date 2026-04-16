@@ -30,8 +30,11 @@ const WeatherChart = ({ models, parameter, enabledModels, showArea = false }: We
       const vals: number[] = [];
       models.forEach((m) => {
         if (enabledModels.includes(m.model) && i < m[parameter].length) {
-          point[m.model] = m[parameter][i];
-          vals.push(m[parameter][i]);
+          const v = m[parameter][i];
+          if (v !== null && v !== undefined) {
+            point[m.model] = v;
+            vals.push(v);
+          }
         }
       });
       if (vals.length > 0) {
