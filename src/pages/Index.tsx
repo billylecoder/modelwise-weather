@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Cloud, Layers, RefreshCw, MapPin, Loader2 } from "lucide-react";
+import { Cloud, Layers, RefreshCw, Loader2, AlertTriangle } from "lucide-react";
 import { defaultLocation, WeatherParam, Location, ModelForecast } from "@/data/weatherApi";
 import { fetchWeatherData } from "@/data/weatherApi";
 import WeatherChart from "@/components/WeatherChart";
@@ -9,13 +9,14 @@ import ModelToggle from "@/components/ModelToggle";
 import ForecastTimeline from "@/components/ForecastTimeline";
 import ModelSelector from "@/components/ModelSelector";
 import LanguageToggle from "@/components/LanguageToggle";
+import LocationSearch from "@/components/LocationSearch";
 import { useI18n, paramTranslationKey } from "@/i18n";
 
 const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
 
 const Index = () => {
   const { t } = useI18n();
-  const [location] = useState<Location>(defaultLocation);
+  const [location, setLocation] = useState<Location>(defaultLocation);
   const [selectedParam, setSelectedParam] = useState<WeatherParam>("temperature");
   const [models, setModels] = useState<ModelForecast[]>([]);
   const [enabledModels, setEnabledModels] = useState<string[]>([]);
@@ -54,6 +55,7 @@ const Index = () => {
   }, [loadData]);
 
   const forecastHour = models[0]?.hours[timelineIndex] ?? 0;
+  const showReliabilityWarning = forecastHour > 120;
 
   const toggleModel = (model: string) => {
     setEnabledModels((prev) =>
@@ -111,11 +113,7 @@ const Index = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 text-sm font-body text-foreground">
-            <MapPin className="w-4 h-4 text-primary" />
-            <span className="font-heading font-semibold">{location.name}</span>
-            <span className="text-xs text-muted-foreground">({location.lat.toFixed(2)}°, {location.lon.toFixed(2)}°)</span>
-          </div>
+          <LocationSearch currentLocation={location} onSelectLocation={setLocation} />
 
           <div className="flex items-center gap-4 text-xs text-muted-foreground font-body">
             <LanguageToggle />
@@ -154,6 +152,14 @@ const Index = () => {
             forecastHour={forecastHour}
           />
         </div>
+
+        {/* Reliability warning */}
+        {showReliabilityWarning && (
+          <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
+            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+            <span className="text-xs text-amber-300 font-body">{t("forecastWarning")}</span>
+          </div>
+        )}
 
         {/* Model data */}
         <div className="glass-card rounded-xl p-5">

@@ -26,19 +26,23 @@ const ModelConfidence = ({ models, parameter, enabledModels, forecastHour }: Mod
           if (diff < minDiff) { minDiff = diff; hourIndex = i; }
         }
       }
-      return { model: m.model, value: m[parameter][hourIndex] ?? 0, color: m.color };
+      const raw = m[parameter][hourIndex];
+      return { model: m.model, value: raw, color: m.color };
     });
 
-    const numbers = vals.map((v) => v.value);
-    const min = Math.min(...numbers);
-    const max = Math.max(...numbers);
-    const spread = max - min;
-    const avg = numbers.reduce((a, b) => a + b, 0) / numbers.length;
+    // Only include non-null values in spread/confidence calculation
+    const validNumbers = vals.filter((v) => v.value !== null && v.value !== undefined).map((v) => v.value as number);
 
     let level: "high" | "medium" | "low" = "high";
-    const relSpread = avg !== 0 ? spread / Math.abs(avg) : 0;
-    if (relSpread > 0.3) level = "low";
-    else if (relSpread > 0.1) level = "medium";
+    if (validNumbers.length >= 2) {
+      const min = Math.min(...validNumbers);
+      const max = Math.max(...validNumbers);
+      const spread = max - min;
+      const avg = validNumbers.reduce((a, b) => a + b, 0) / validNumbers.length;
+      const relSpread = avg !== 0 ? spread / Math.abs(avg) : 0;
+      if (relSpread > 0.3) level = "low";
+      else if (relSpread > 0.1) level = "medium";
+    }
 
     return { level, values: vals };
   }, [models, parameter, enabledModels, forecastHour]);
@@ -64,7 +68,9 @@ const ModelConfidence = ({ models, parameter, enabledModels, forecastHour }: Mod
           <div key={v.model} className="flex-1 text-center">
             <div className="w-2 h-2 rounded-full mx-auto mb-1" style={{ backgroundColor: v.color }} />
             <div className="text-xs text-muted-foreground font-body">{v.model}</div>
-            <div className="text-sm font-heading font-semibold">{v.value}</div>
+            <div className="text-sm font-heading font-semibold">
+              {v.value !== null && v.value !== undefined ? v.value : "-"}
+            </div>
           </div>
         ))}
       </div>

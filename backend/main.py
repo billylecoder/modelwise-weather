@@ -20,9 +20,10 @@ from pydantic import BaseModel
 # ---------------------------------------------------------------------------
 
 MODEL_CONFIGS = [
-    {"id": "ecmwf_ifs025", "name": "ECMWF", "color": "hsl(200, 80%, 55%)"},
-    {"id": "gfs_seamless",  "name": "GFS",   "color": "hsl(140, 70%, 50%)"},
-    {"id": "icon_eu",       "name": "ICON-EU", "color": "hsl(30, 90%, 55%)"},
+    {"id": "ecmwf_ifs025", "name": "ECMWF",   "color": "hsl(200, 80%, 55%)"},
+    {"id": "gfs_seamless",  "name": "GFS",     "color": "hsl(140, 70%, 50%)"},
+    {"id": "icon_seamless", "name": "ICON-EU", "color": "hsl(280, 70%, 60%)"},
+    {"id": "gem_seamless",  "name": "GEM",     "color": "hsl(30, 90%, 55%)"},
 ]
 
 HOURLY_PARAMS = [
@@ -34,9 +35,13 @@ HOURLY_PARAMS = [
     "relative_humidity_2m",
     "dew_point_2m",
     "cape",
+    "temperature_850hPa",
+    "temperature_500hPa",
+    "apparent_temperature",
+    "cloud_cover",
 ]
 
-MAX_HOURS = 120
+MAX_HOURS = 360
 DEFAULT_LAT = 37.9637
 DEFAULT_LON = 23.7584
 
@@ -48,14 +53,18 @@ class ModelForecast(BaseModel):
     model: str
     color: str
     hours: list[int]
-    temperature: list[float]
-    precipitation: list[float]
-    windSpeed: list[float]
-    windGusts: list[float]
-    pressure: list[float]
-    humidity: list[float]
-    dewPoint: list[float]
-    cape: list[float]
+    temperature: list[float | None]
+    precipitation: list[float | None]
+    windSpeed: list[float | None]
+    windGusts: list[float | None]
+    pressure: list[float | None]
+    humidity: list[float | None]
+    dewPoint: list[float | None]
+    cape: list[float | None]
+    temp850hPa: list[float | None]
+    temp500hPa: list[float | None]
+    apparentTemperature: list[float | None]
+    cloudCover: list[float | None]
 
 
 class ForecastResponse(BaseModel):
@@ -74,7 +83,7 @@ def _build_url(lat: float, lon: float, model_id: str) -> str:
         f"?latitude={lat}&longitude={lon}"
         f"&hourly={params}"
         f"&models={model_id}"
-        f"&forecast_days=6"
+        f"&forecast_days=16"
         f"&timezone=auto"
     )
 
@@ -96,6 +105,10 @@ def _parse_model(data: dict[str, Any], name: str, color: str) -> ModelForecast |
     humidity: list[float] = []
     dew: list[float] = []
     cape: list[float] = []
+    temp850: list[float | None] = []
+    temp500: list[float | None] = []
+    apparent: list[float | None] = []
+    cloud: list[float | None] = []
 
     for i, t in enumerate(times):
         h = round((datetime.fromisoformat(t).timestamp() * 1000 - start_ms) / 3_600_000)
@@ -115,6 +128,15 @@ def _parse_model(data: dict[str, Any], name: str, color: str) -> ModelForecast |
         dew.append((hourly.get("dew_point_2m") or [])[i] or 0 if i < len(hourly.get("dew_point_2m", [])) else 0)
         cape.append((hourly.get("cape") or [])[i] or 0 if i < len(hourly.get("cape", [])) else 0)
 
+        t850_arr = hourly.get("temperature_850hPa") or []
+        temp850.append(t850_arr[i] if i < len(t850_arr) and t850_arr[i] is not None else None)
+        t500_arr = hourly.get("temperature_500hPa") or []
+        temp500.append(t500_arr[i] if i < len(t500_arr) and t500_arr[i] is not None else None)
+        app_arr = hourly.get("apparent_temperature") or []
+        apparent.append(app_arr[i] if i < len(app_arr) and app_arr[i] is not None else None)
+        cloud_arr = hourly.get("cloud_cover") or []
+        cloud.append(cloud_arr[i] if i < len(cloud_arr) and cloud_arr[i] is not None else None)
+
     if not hours:
         return None
 
@@ -130,6 +152,10 @@ def _parse_model(data: dict[str, Any], name: str, color: str) -> ModelForecast |
         humidity=humidity,
         dewPoint=dew,
         cape=cape,
+        temp850hPa=temp850,
+        temp500hPa=temp500,
+        apparentTemperature=apparent,
+        cloudCover=cloud,
     )
 
 
@@ -198,18 +224,16 @@ async def get_forecast(
     if not models:
         return ForecastResponse(models=[], startTime=datetime.now(timezone.utc).isoformat())
 
-    # Normalize to common length
-    min_len = min(len(m.hours) for m in models)
+    # Pad shorter models with None so all share the longest timeline
+    max_len = max(len(m.hours) for m in models)
+    longest_hours = max(models, key=lambda m: len(m.hours)).hours
+    fields = ["temperature", "precipitation", "windSpeed", "windGusts", "pressure", "humidity", "dewPoint", "cape", "temp850hPa", "temp500hPa", "apparentTemperature", "cloudCover"]
     for m in models:
-        m.hours = m.hours[:min_len]
-        m.temperature = m.temperature[:min_len]
-        m.precipitation = m.precipitation[:min_len]
-        m.windSpeed = m.windSpeed[:min_len]
-        m.windGusts = m.windGusts[:min_len]
-        m.pressure = m.pressure[:min_len]
-        m.humidity = m.humidity[:min_len]
-        m.dewPoint = m.dewPoint[:min_len]
-        m.cape = m.cape[:min_len]
+        if len(m.hours) < max_len:
+            pad = max_len - len(m.hours)
+            m.hours = longest_hours
+            for f in fields:
+                setattr(m, f, getattr(m, f) + [None] * pad)
 
     resp = ForecastResponse(
         models=models,
