@@ -10,6 +10,10 @@ export interface ModelForecast {
   humidity: number[];
   dewPoint: number[];
   cape: number[];
+  temp850hPa: number[];
+  temp500hPa: number[];
+  apparentTemperature: number[];
+  cloudCover: number[];
 }
 
 export interface Location {
@@ -26,17 +30,21 @@ export const defaultLocation: Location = {
   country: "GR",
 };
 
-export type WeatherParam = "temperature" | "precipitation" | "windSpeed" | "windGusts" | "pressure" | "humidity" | "dewPoint" | "cape";
+export type WeatherParam = "temperature" | "precipitation" | "windSpeed" | "windGusts" | "pressure" | "humidity" | "dewPoint" | "cape" | "temp850hPa" | "temp500hPa" | "apparentTemperature" | "cloudCover";
 
 export const parameterConfig: Record<WeatherParam, { label: string; unit: string; icon: string }> = {
   temperature: { label: "Temperature", unit: "°C", icon: "Thermometer" },
+  apparentTemperature: { label: "Feels Like", unit: "°C", icon: "Thermometer" },
   precipitation: { label: "Precipitation", unit: "mm", icon: "CloudRain" },
   windSpeed: { label: "Wind Speed", unit: "km/h", icon: "Wind" },
   windGusts: { label: "Wind Gusts", unit: "km/h", icon: "Wind" },
   pressure: { label: "Pressure", unit: "hPa", icon: "Gauge" },
   humidity: { label: "Humidity", unit: "%", icon: "Droplets" },
   dewPoint: { label: "Dew Point", unit: "°C", icon: "Thermometer" },
+  cloudCover: { label: "Cloud Cover", unit: "%", icon: "Cloud" },
   cape: { label: "CAPE", unit: "J/kg", icon: "Zap" },
+  temp850hPa: { label: "Temp 850hPa", unit: "°C", icon: "Thermometer" },
+  temp500hPa: { label: "Temp 500hPa", unit: "°C", icon: "Thermometer" },
 };
 
 // ---------------------------------------------------------------------------
@@ -135,6 +143,10 @@ const HOURLY_PARAMS = [
   "relative_humidity_2m",
   "dew_point_2m",
   "cape",
+  "temperature_850hPa",
+  "temperature_500hPa",
+  "apparent_temperature",
+  "cloud_cover",
 ];
 
 const MAX_HOURS = 120;
@@ -165,6 +177,10 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
   const rawHumidity: number[] = [];
   const rawDew: number[] = [];
   const rawCape: number[] = [];
+  const rawTemp850: number[] = [];
+  const rawTemp500: number[] = [];
+  const rawApparent: number[] = [];
+  const rawCloud: number[] = [];
 
   for (let i = 0; i < hourly.time.length; i++) {
     const h = Math.round((new Date(hourly.time[i]).getTime() - startTime) / 3600000);
@@ -180,6 +196,10 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
     rawHumidity.push(hourly.relative_humidity_2m?.[i] ?? 0);
     rawDew.push(hourly.dew_point_2m?.[i] ?? 0);
     rawCape.push(hourly.cape?.[i] ?? 0);
+    rawTemp850.push(hourly.temperature_850hPa?.[i] ?? null);
+    rawTemp500.push(hourly.temperature_500hPa?.[i] ?? null);
+    rawApparent.push(hourly.apparent_temperature?.[i] ?? null);
+    rawCloud.push(hourly.cloud_cover?.[i] ?? null);
   }
 
   if (rawHours.length === 0) return null;
@@ -198,6 +218,10 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
       humidity: rawHumidity,
       dewPoint: rawDew,
       cape: rawCape,
+      temp850hPa: rawTemp850,
+      temp500hPa: rawTemp500,
+      apparentTemperature: rawApparent,
+      cloudCover: rawCloud,
     },
   };
 }
@@ -224,7 +248,7 @@ async function fetchDirectFromOpenMeteo(lat: number, lon: number): Promise<Fetch
 
   if (results.length > 1) {
     const minLen = Math.min(...results.map((r) => r.hours.length));
-    const fields: (keyof ModelForecast)[] = ["hours", "temperature", "precipitation", "windSpeed", "windGusts", "pressure", "humidity", "dewPoint", "cape"];
+    const fields: (keyof ModelForecast)[] = ["hours", "temperature", "precipitation", "windSpeed", "windGusts", "pressure", "humidity", "dewPoint", "cape", "temp850hPa", "temp500hPa", "apparentTemperature", "cloudCover"];
     for (const r of results) {
       for (const f of fields) {
         (r as any)[f] = (r as any)[f].slice(0, minLen);
