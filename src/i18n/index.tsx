@@ -46,6 +46,7 @@ const translations = {
     locationNotFound: "Location not found",
     locationError: "Failed to search locations",
     searchingLocations: "Searching…",
+    forecastWarning: "Forecast beyond 120h may be less reliable.",
   },
   el: {
     appName: "WeatherIntel",
@@ -90,6 +91,7 @@ const translations = {
     locationNotFound: "Δεν βρέθηκε τοποθεσία",
     locationError: "Αποτυχία αναζήτησης",
     searchingLocations: "Αναζήτηση…",
+    forecastWarning: "Η πρόγνωση πέραν των 120 ωρών μπορεί να είναι λιγότερο αξιόπιστη.",
   },
 } as const;
 
