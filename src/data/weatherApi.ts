@@ -188,14 +188,14 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
     if (hourly.temperature_2m[i] === null || hourly.temperature_2m[i] === undefined) break;
 
     rawHours.push(h);
-    rawTemp.push(hourly.temperature_2m[i] ?? 0);
-    rawPrecip.push(hourly.precipitation?.[i] ?? 0);
-    rawWind.push(hourly.wind_speed_10m?.[i] ?? 0);
-    rawGusts.push(hourly.wind_gusts_10m?.[i] ?? 0);
-    rawPressure.push(hourly.pressure_msl?.[i] ?? 0);
-    rawHumidity.push(hourly.relative_humidity_2m?.[i] ?? 0);
-    rawDew.push(hourly.dew_point_2m?.[i] ?? 0);
-    rawCape.push(hourly.cape?.[i] ?? 0);
+    rawTemp.push(hourly.temperature_2m[i] ?? null);
+    rawPrecip.push(hourly.precipitation?.[i] ?? null);
+    rawWind.push(hourly.wind_speed_10m?.[i] ?? null);
+    rawGusts.push(hourly.wind_gusts_10m?.[i] ?? null);
+    rawPressure.push(hourly.pressure_msl?.[i] ?? null);
+    rawHumidity.push(hourly.relative_humidity_2m?.[i] ?? null);
+    rawDew.push(hourly.dew_point_2m?.[i] ?? null);
+    rawCape.push(hourly.cape?.[i] ?? null);
     rawTemp850.push(hourly.temperature_850hPa?.[i] ?? null);
     rawTemp500.push(hourly.temperature_500hPa?.[i] ?? null);
     rawApparent.push(hourly.apparent_temperature?.[i] ?? null);
@@ -234,7 +234,13 @@ async function fetchDirectFromOpenMeteo(lat: number, lon: number): Promise<Fetch
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      return parseModelResponse(data, cfg.displayName, cfg.color);
+      const result = parseModelResponse(data, cfg.displayName, cfg.color);
+      // Update display name with actual forecast range
+      if (result) {
+        const maxH = result.model.hours[result.model.hours.length - 1];
+        result.model.model = `${cfg.name} (${formatRun(cfg.run)} · ${maxH}h)`;
+      }
+      return result;
     } catch (e) {
       console.warn(`Failed to fetch ${cfg.displayName}:`, e);
       return null;
