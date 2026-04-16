@@ -7,6 +7,7 @@ import {
   Gauge,
   Droplets,
   Zap,
+  Cloud,
 } from "lucide-react";
 
 const iconMap: Record<string, React.ComponentType<any>> = {
@@ -16,6 +17,7 @@ const iconMap: Record<string, React.ComponentType<any>> = {
   Gauge,
   Droplets,
   Zap,
+  Cloud,
 };
 
 interface ParameterSelectorProps {
