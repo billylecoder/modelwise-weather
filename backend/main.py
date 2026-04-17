@@ -42,8 +42,8 @@ HOURLY_PARAMS = [
 ]
 
 MAX_HOURS = 360
-DEFAULT_LAT = 37.9637
-DEFAULT_LON = 23.7584
+DEFAULT_LAT = 37.9838
+DEFAULT_LON = 23.7275
 
 # ---------------------------------------------------------------------------
 # Schemas
