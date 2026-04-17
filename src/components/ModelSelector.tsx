@@ -2,6 +2,8 @@ import { useState } from "react";
 import { ModelForecast, parameterConfig, WeatherParam } from "@/data/weatherApi";
 import { Thermometer, CloudRain, Wind, Gauge, Droplets, Zap, Cloud, ChevronDown, ChevronUp } from "lucide-react";
 import { useI18n, paramTranslationKey } from "@/i18n";
+import { useUnits } from "@/contexts/UnitsContext";
+import { formatValue, getUnitLabel } from "@/lib/units";
 
 const iconMap: Record<string, React.ComponentType<any>> = {
   Thermometer, CloudRain, Wind, Gauge, Droplets, Zap, Cloud,
@@ -19,6 +21,7 @@ interface ModelSelectorProps {
 
 const ModelSelector = ({ models, selectedModel, onSelectModel, forecastHour }: ModelSelectorProps) => {
   const { t } = useI18n();
+  const { units } = useUnits();
   const [showAdvanced, setShowAdvanced] = useState(false);
   const active = models.find((m) => m.model === selectedModel) ?? models[0];
   
@@ -38,15 +41,16 @@ const ModelSelector = ({ models, selectedModel, onSelectModel, forecastHour }: M
       {params.map((param) => {
         const config = parameterConfig[param];
         const Icon = config.icon ? iconMap[config.icon] : null;
-        const value = active[param]?.[hourIndex];
-        const displayValue = value === null || value === undefined ? "-" : value;
+        const rawValue = active[param]?.[hourIndex];
+        const displayValue = formatValue(rawValue as number | null | undefined, param, units);
+        const unitLabel = getUnitLabel(param, units, config.unit);
         const translationKey = paramTranslationKey[param];
 
         return (
           <div key={param} className="glass-card rounded-xl p-3 text-center">
             {Icon && <Icon className="w-4 h-4 text-primary mx-auto mb-1" />}
             <div className="font-heading font-bold text-lg">{displayValue}</div>
-            <div className="text-[10px] text-muted-foreground font-body">{config.unit}</div>
+            <div className="text-[10px] text-muted-foreground font-body">{unitLabel}</div>
             <div className="text-[10px] text-muted-foreground font-body mt-0.5">
               {translationKey ? t(translationKey) : config.label}
             </div>

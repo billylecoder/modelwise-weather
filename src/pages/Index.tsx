@@ -10,6 +10,7 @@ import ForecastTimeline from "@/components/ForecastTimeline";
 import ModelSelector from "@/components/ModelSelector";
 import LanguageToggle from "@/components/LanguageToggle";
 import LocationSearch from "@/components/LocationSearch";
+import SettingsPanel from "@/components/SettingsPanel";
 import { useI18n, paramTranslationKey } from "@/i18n";
 
 const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
@@ -116,6 +117,7 @@ const Index = () => {
           <LocationSearch currentLocation={location} onSelectLocation={setLocation} />
 
           <div className="flex items-center gap-4 text-xs text-muted-foreground font-body">
+            <SettingsPanel />
             <LanguageToggle />
             <button
               onClick={loadData}
