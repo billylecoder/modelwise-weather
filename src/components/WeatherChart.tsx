@@ -23,6 +23,8 @@ interface WeatherChartProps {
 
 const WeatherChart = ({ models, parameter, enabledModels, showArea = false }: WeatherChartProps) => {
   const config = parameterConfig[parameter];
+  const { units } = useUnits();
+  const unitLabel = getUnitLabel(parameter, units, config.unit);
 
   const data = useMemo(() => {
     if (models.length === 0) return [];
@@ -32,19 +34,22 @@ const WeatherChart = ({ models, parameter, enabledModels, showArea = false }: We
       const vals: number[] = [];
       models.forEach((m) => {
         if (enabledModels.includes(m.model) && i < m[parameter].length) {
-          const v = m[parameter][i];
-          if (v !== null && v !== undefined) {
-            point[m.model] = v;
-            vals.push(v);
+          const raw = m[parameter][i];
+          const converted = convertValue(raw as number | null | undefined, parameter, units);
+          if (converted !== null) {
+            const rounded = smartRound(converted, parameter, units);
+            point[m.model] = rounded;
+            vals.push(rounded);
           }
         }
       });
       if (vals.length > 0) {
-        point["Average"] = +(vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1);
+        const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+        point["Average"] = smartRound(avg, parameter, units);
       }
       return point;
     });
-  }, [models, parameter, enabledModels]);
+  }, [models, parameter, enabledModels, units]);
 
   const activeModels = models.filter((m) => enabledModels.includes(m.model));
 
