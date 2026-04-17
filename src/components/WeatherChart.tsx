@@ -104,6 +104,8 @@ const WeatherChart = ({ models, parameter, enabledModels, showArea = false }: We
           <YAxis
             tick={{ fill: "hsl(220, 10%, 55%)", fontSize: 11, fontFamily: "Manrope" }}
             stroke="hsl(235, 25%, 16%)"
+            domain={yDomain}
+            allowDataOverflow={parameter === "pressure"}
             label={{ value: unitLabel, angle: -90, position: "insideLeft", fill: "hsl(220, 10%, 55%)", fontSize: 10, fontFamily: "Manrope", offset: 15 }}
           />
           <Tooltip content={<CustomTooltip />} />
