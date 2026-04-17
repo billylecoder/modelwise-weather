@@ -1,6 +1,8 @@
 import { useMemo } from "react";
 import { ModelForecast, WeatherParam } from "@/data/weatherApi";
 import { useI18n } from "@/i18n";
+import { useUnits } from "@/contexts/UnitsContext";
+import { convertValue, smartRound } from "@/lib/units";
 
 interface ModelConfidenceProps {
   models: ModelForecast[];
