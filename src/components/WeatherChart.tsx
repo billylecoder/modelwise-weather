@@ -72,11 +72,27 @@ const WeatherChart = ({ models, parameter, enabledModels, showArea = false, data
 
   const activeModels = models.filter((m) => enabledModels.includes(m.model));
 
+  const baseTime = useMemo(
+    () => (dataStartTime ? parseLocalNaiveISO(dataStartTime) : null),
+    [dataStartTime]
+  );
+
+  const formatTickLabel = (h: number) => {
+    if (!baseTime) return `+${h}h`;
+    return formatAxisTick(addHoursNaive(baseTime, h));
+  };
+
+  const formatTooltipLabel = (h: number) => {
+    if (!baseTime) return `+${h}h`;
+    const t = addHoursNaive(baseTime, h);
+    return `+${h}h · ${formatTimeHHMM(t)}`;
+  };
+
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload) return null;
     return (
       <div className="glass-card rounded-lg p-3 border border-border/50">
-        <p className="text-xs text-muted-foreground font-body mb-2">+{label}h</p>
+        <p className="text-xs text-muted-foreground font-body mb-2">{formatTooltipLabel(label)}</p>
         {payload.map((entry: any) => (
           <div key={entry.dataKey} className="flex items-center gap-2 text-sm">
             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
@@ -100,8 +116,9 @@ const WeatherChart = ({ models, parameter, enabledModels, showArea = false, data
           <XAxis
             dataKey="hour"
             tick={{ fill: "hsl(220, 10%, 55%)", fontSize: 11, fontFamily: "Manrope" }}
-            tickFormatter={(v) => `${v}h`}
+            tickFormatter={formatTickLabel}
             stroke="hsl(235, 25%, 16%)"
+            minTickGap={40}
           />
           <YAxis
             tick={{ fill: "hsl(220, 10%, 55%)", fontSize: 11, fontFamily: "Manrope" }}
