@@ -11,6 +11,8 @@ import {
   AreaChart,
 } from "recharts";
 import { ModelForecast, WeatherParam, parameterConfig } from "@/data/weatherApi";
+import { useUnits } from "@/contexts/UnitsContext";
+import { convertValue, smartRound, getUnitLabel } from "@/lib/units";
 
 interface WeatherChartProps {
   models: ModelForecast[];
@@ -56,7 +58,7 @@ const WeatherChart = ({ models, parameter, enabledModels, showArea = false }: We
             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
             <span className="font-medium font-heading text-xs">{entry.dataKey}</span>
             <span className="text-muted-foreground font-body ml-auto">
-              {entry.value} {config.unit}
+              {entry.value} {unitLabel}
             </span>
           </div>
         ))}
@@ -80,6 +82,7 @@ const WeatherChart = ({ models, parameter, enabledModels, showArea = false }: We
           <YAxis
             tick={{ fill: "hsl(220, 10%, 55%)", fontSize: 11, fontFamily: "Manrope" }}
             stroke="hsl(235, 25%, 16%)"
+            label={{ value: unitLabel, angle: -90, position: "insideLeft", fill: "hsl(220, 10%, 55%)", fontSize: 10, fontFamily: "Manrope", offset: 15 }}
           />
           <Tooltip content={<CustomTooltip />} />
           {activeModels.map((m) =>
