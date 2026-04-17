@@ -23,6 +23,12 @@ interface WeatherChartProps {
   dataStartTime?: string;
 }
 
+function shouldShowTick(h: number): boolean {
+  if (h <= 120) return h % 3 === 0;
+  if (h <= 250) return h % 6 === 0;
+  return h % 12 === 0;
+}
+
 const WeatherChart = ({ models, parameter, enabledModels, showArea = false, dataStartTime }: WeatherChartProps) => {
   const config = parameterConfig[parameter];
   const { units } = useUnits();
@@ -117,9 +123,9 @@ const WeatherChart = ({ models, parameter, enabledModels, showArea = false, data
           <XAxis
             dataKey="hour"
             tick={{ fill: "hsl(220, 10%, 55%)", fontSize: 11, fontFamily: "Manrope" }}
-            tickFormatter={formatTickLabel}
+            tickFormatter={(h) => (shouldShowTick(h) ? `+${h}h` : "")}
             stroke="hsl(235, 25%, 16%)"
-            minTickGap={40}
+            interval={0}
           />
           <YAxis
             tick={{ fill: "hsl(220, 10%, 55%)", fontSize: 11, fontFamily: "Manrope" }}
