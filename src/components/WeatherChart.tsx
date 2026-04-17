@@ -13,23 +13,15 @@ import {
 import { ModelForecast, WeatherParam, parameterConfig } from "@/data/weatherApi";
 import { useUnits } from "@/contexts/UnitsContext";
 import { convertValue, smartRound, getUnitLabel } from "@/lib/units";
-import { parseLocalNaiveISO, addHoursNaive, formatTimeHHMM, formatAxisTick } from "@/lib/time";
 
 interface WeatherChartProps {
   models: ModelForecast[];
   parameter: WeatherParam;
   enabledModels: string[];
   showArea?: boolean;
-  dataStartTime?: string;
 }
 
-function shouldShowTick(h: number, i: number): boolean {
-  if (h <= 144) return i % 3 === 0;
-  if (h <= 250) return i % 6 === 0;
-  return i % 12 === 0;
-}
-
-const WeatherChart = ({ models, parameter, enabledModels, showArea = false, dataStartTime }: WeatherChartProps) => {
+const WeatherChart = ({ models, parameter, enabledModels, showArea = false }: WeatherChartProps) => {
   const config = parameterConfig[parameter];
   const { units } = useUnits();
   const unitLabel = getUnitLabel(parameter, units, config.unit);
@@ -45,16 +37,9 @@ const WeatherChart = ({ models, parameter, enabledModels, showArea = false, data
           const raw = m[parameter][i];
           const converted = convertValue(raw as number | null | undefined, parameter, units);
           if (converted !== null) {
-            let value = smartRound(converted, parameter, units);
-
-            if (parameter === "pressure" && typeof value === "number") {
-              if (value < 990 || value > 1035) {
-                value = Math.round(value / 5) * 5;;
-              }
-            }
-
-            point[m.model] = value;
-            vals.push(value);
+            const rounded = smartRound(converted, parameter, units);
+            point[m.model] = rounded;
+            vals.push(rounded);
           }
         }
       });
@@ -69,7 +54,7 @@ const WeatherChart = ({ models, parameter, enabledModels, showArea = false, data
   const yDomain = useMemo<[number | string, number | string]>(() => {
     if (parameter === "pressure") {
       // Fixed range — values outside will clip (hPa and mb share numeric values)
-      return [990, 1035];
+      return [900, 1055];
     }
     if (parameter === "cape") {
       let max = 1500;
@@ -85,20 +70,11 @@ const WeatherChart = ({ models, parameter, enabledModels, showArea = false, data
 
   const activeModels = models.filter((m) => enabledModels.includes(m.model));
 
-  const baseTime = useMemo(
-    () => (dataStartTime ? parseLocalNaiveISO(dataStartTime) : null),
-    [dataStartTime]
-  );
-
-  const formatTickLabel = (h: number) => `+${h}h`;
-
-  const formatTooltipLabel = (h: number) => `+${h}h`;
-
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload) return null;
     return (
       <div className="glass-card rounded-lg p-3 border border-border/50">
-        <p className="text-xs text-muted-foreground font-body mb-2">{formatTooltipLabel(label)}</p>
+        <p className="text-xs text-muted-foreground font-body mb-2">+{label}h</p>
         {payload.map((entry: any) => (
           <div key={entry.dataKey} className="flex items-center gap-2 text-sm">
             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
@@ -121,10 +97,9 @@ const WeatherChart = ({ models, parameter, enabledModels, showArea = false, data
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(235, 25%, 16%)" />
           <XAxis
             dataKey="hour"
-            tickFormatter={(h, index) =>
-              shouldShowTick(h, index) ? `+${h}h` : ""
-            }
-            interval={0}
+            tick={{ fill: "hsl(220, 10%, 55%)", fontSize: 11, fontFamily: "Manrope" }}
+            tickFormatter={(v) => `${v}h`}
+            stroke="hsl(235, 25%, 16%)"
           />
           <YAxis
             tick={{ fill: "hsl(220, 10%, 55%)", fontSize: 11, fontFamily: "Manrope" }}

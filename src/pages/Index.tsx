@@ -194,7 +194,6 @@ const Index = () => {
               parameter={selectedParam}
               enabledModels={enabledModels}
               showArea={selectedParam === "precipitation"}
-              dataStartTime={dataStartTime}
             />
           </div>
         </div>
