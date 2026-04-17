@@ -51,6 +51,23 @@ const WeatherChart = ({ models, parameter, enabledModels, showArea = false }: We
     });
   }, [models, parameter, enabledModels, units]);
 
+  const yDomain = useMemo<[number | string, number | string]>(() => {
+    if (parameter === "pressure") {
+      // Fixed range — values outside will clip (hPa and mb share numeric values)
+      return [990, 1035];
+    }
+    if (parameter === "cape") {
+      let max = 1500;
+      data.forEach((p) => {
+        Object.entries(p).forEach(([k, v]) => {
+          if (k !== "hour" && typeof v === "number" && v > max) max = v;
+        });
+      });
+      return [0, max];
+    }
+    return ["auto", "auto"];
+  }, [data, parameter]);
+
   const activeModels = models.filter((m) => enabledModels.includes(m.model));
 
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -87,6 +104,8 @@ const WeatherChart = ({ models, parameter, enabledModels, showArea = false }: We
           <YAxis
             tick={{ fill: "hsl(220, 10%, 55%)", fontSize: 11, fontFamily: "Manrope" }}
             stroke="hsl(235, 25%, 16%)"
+            domain={yDomain}
+            allowDataOverflow={parameter === "pressure"}
             label={{ value: unitLabel, angle: -90, position: "insideLeft", fill: "hsl(220, 10%, 55%)", fontSize: 10, fontFamily: "Manrope", offset: 15 }}
           />
           <Tooltip content={<CustomTooltip />} />
