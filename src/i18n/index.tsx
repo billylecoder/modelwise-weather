@@ -46,6 +46,11 @@ const translations = {
     locationError: "Failed to search locations",
     searchingLocations: "Searching…",
     forecastWarning: "Forecast beyond 120h may be less reliable.",
+    settings: "Settings",
+    unitsSettings: "Unit Preferences",
+    unitsDescription: "Choose units for each parameter. Values convert instantly.",
+    wind: "Wind",
+    resetDefaults: "Reset to defaults",
   },
   el: {
     appName: "WeatherIntel",
@@ -90,6 +95,11 @@ const translations = {
     locationError: "Αποτυχία αναζήτησης",
     searchingLocations: "Αναζήτηση…",
     forecastWarning: "Η πρόγνωση πέραν των 120 ωρών μπορεί να είναι λιγότερο αξιόπιστη.",
+    settings: "Ρυθμίσεις",
+    unitsSettings: "Προτιμήσεις Μονάδων",
+    unitsDescription: "Επιλέξτε μονάδες για κάθε παράμετρο. Οι τιμές μετατρέπονται άμεσα.",
+    wind: "Άνεμος",
+    resetDefaults: "Επαναφορά προεπιλογών",
   },
 } as const;
 
