@@ -39,9 +39,17 @@ const WeatherChart = ({ models, parameter, enabledModels, showArea = false, data
           const raw = m[parameter][i];
           const converted = convertValue(raw as number | null | undefined, parameter, units);
           if (converted !== null) {
-            const rounded = smartRound(converted, parameter, units);
-            point[m.model] = rounded;
-            vals.push(rounded);
+            let value = smartRound(converted, parameter, units);
+
+            // 🔥 PRESSURE SPECIAL HANDLING
+            if (parameter === "pressure" && typeof value === "number") {
+              if (value < 990 || value > 1035) {
+                value = Math.round(value / 5) * 5;;
+              }
+            }
+
+            point[m.model] = value;
+            vals.push(value);
           }
         }
       });
@@ -77,16 +85,9 @@ const WeatherChart = ({ models, parameter, enabledModels, showArea = false, data
     [dataStartTime]
   );
 
-  const formatTickLabel = (h: number) => {
-    if (!baseTime) return `+${h}h`;
-    return formatAxisTick(addHoursNaive(baseTime, h));
-  };
+  const formatTickLabel = (h: number) => `+${h}h`;
 
-  const formatTooltipLabel = (h: number) => {
-    if (!baseTime) return `+${h}h`;
-    const t = addHoursNaive(baseTime, h);
-    return `+${h}h · ${formatTimeHHMM(t)}`;
-  };
+  const formatTooltipLabel = (h: number) => `+${h}h`;
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload) return null;
