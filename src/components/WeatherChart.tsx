@@ -13,15 +13,17 @@ import {
 import { ModelForecast, WeatherParam, parameterConfig } from "@/data/weatherApi";
 import { useUnits } from "@/contexts/UnitsContext";
 import { convertValue, smartRound, getUnitLabel } from "@/lib/units";
+import { parseLocalNaiveISO, addHoursNaive, formatTimeHHMM, formatAxisTick } from "@/lib/time";
 
 interface WeatherChartProps {
   models: ModelForecast[];
   parameter: WeatherParam;
   enabledModels: string[];
   showArea?: boolean;
+  dataStartTime?: string;
 }
 
-const WeatherChart = ({ models, parameter, enabledModels, showArea = false }: WeatherChartProps) => {
+const WeatherChart = ({ models, parameter, enabledModels, showArea = false, dataStartTime }: WeatherChartProps) => {
   const config = parameterConfig[parameter];
   const { units } = useUnits();
   const unitLabel = getUnitLabel(parameter, units, config.unit);
