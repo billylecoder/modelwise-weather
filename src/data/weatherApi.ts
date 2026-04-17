@@ -195,7 +195,10 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
     rawPressure.push(hourly.pressure_msl?.[i] ?? null);
     rawHumidity.push(hourly.relative_humidity_2m?.[i] ?? null);
     rawDew.push(hourly.dew_point_2m?.[i] ?? null);
-    rawCape.push(hourly.cape?.[i] ?? null);
+    {
+      const c = hourly.cape?.[i];
+      rawCape.push(c == null ? null : Math.max(0, c));
+    }
     rawTemp850.push(hourly.temperature_850hPa?.[i] ?? null);
     rawTemp500.push(hourly.temperature_500hPa?.[i] ?? null);
     rawApparent.push(hourly.apparent_temperature?.[i] ?? null);
