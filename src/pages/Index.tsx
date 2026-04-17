@@ -189,22 +189,13 @@ const Index = () => {
             <h3 className="font-heading font-medium text-xs text-muted-foreground mb-2">
               {getParamLabel(selectedParam)}
             </h3>
-            <WeatherChart models={models} parameter={selectedParam} enabledModels={enabledModels} />
+            <WeatherChart
+              models={models}
+              parameter={selectedParam}
+              enabledModels={enabledModels}
+              showArea={selectedParam === "precipitation"}
+            />
           </div>
-
-          {selectedParam !== "temperature" && (
-            <div className="mt-5 pt-5 border-t border-border/30">
-              <h3 className="font-heading font-medium text-xs text-muted-foreground mb-2">{t("temperature")}</h3>
-              <WeatherChart models={models} parameter="temperature" enabledModels={enabledModels} />
-            </div>
-          )}
-
-          {selectedParam !== "precipitation" && (
-            <div className="mt-5 pt-5 border-t border-border/30">
-              <h3 className="font-heading font-medium text-xs text-muted-foreground mb-2">{t("precipitation")}</h3>
-              <WeatherChart models={models} parameter="precipitation" enabledModels={enabledModels} showArea />
-            </div>
-          )}
         </div>
       </div>
     </div>
