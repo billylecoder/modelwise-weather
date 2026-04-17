@@ -23,10 +23,10 @@ interface WeatherChartProps {
   dataStartTime?: string;
 }
 
-function shouldShowTick(h: number): boolean {
-  if (h <= 120) return h % 3 === 0;
-  if (h <= 250) return h % 6 === 0;
-  return h % 12 === 0;
+function shouldShowTick(h: number, i: number): boolean {
+  if (h <= 144) return i % 3 === 0;
+  if (h <= 250) return i % 6 === 0;
+  return i % 12 === 0;
 }
 
 const WeatherChart = ({ models, parameter, enabledModels, showArea = false, dataStartTime }: WeatherChartProps) => {
@@ -47,7 +47,6 @@ const WeatherChart = ({ models, parameter, enabledModels, showArea = false, data
           if (converted !== null) {
             let value = smartRound(converted, parameter, units);
 
-            // 🔥 PRESSURE SPECIAL HANDLING
             if (parameter === "pressure" && typeof value === "number") {
               if (value < 990 || value > 1035) {
                 value = Math.round(value / 5) * 5;;
@@ -122,9 +121,9 @@ const WeatherChart = ({ models, parameter, enabledModels, showArea = false, data
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(235, 25%, 16%)" />
           <XAxis
             dataKey="hour"
-            tick={{ fill: "hsl(220, 10%, 55%)", fontSize: 11, fontFamily: "Manrope" }}
-            tickFormatter={(h) => (shouldShowTick(h) ? `+${h}h` : "")}
-            stroke="hsl(235, 25%, 16%)"
+            tickFormatter={(h, index) =>
+              shouldShowTick(h, index) ? `+${h}h` : ""
+            }
             interval={0}
           />
           <YAxis
