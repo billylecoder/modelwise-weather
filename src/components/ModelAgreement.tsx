@@ -11,6 +11,7 @@ interface ModelConfidenceProps {
 
 const ModelConfidence = ({ models, parameter, enabledModels, forecastHour }: ModelConfidenceProps) => {
   const { t } = useI18n();
+  const { units } = useUnits();
 
   const { level, values } = useMemo(() => {
     const active = models.filter((m) => enabledModels.includes(m.model));
@@ -27,7 +28,8 @@ const ModelConfidence = ({ models, parameter, enabledModels, forecastHour }: Mod
         }
       }
       const raw = m[parameter][hourIndex];
-      return { model: m.model, value: raw, color: m.color };
+      const converted = convertValue(raw as number | null | undefined, parameter, units);
+      return { model: m.model, value: converted, color: m.color };
     });
 
     // Only include non-null values in spread/confidence calculation
@@ -45,7 +47,7 @@ const ModelConfidence = ({ models, parameter, enabledModels, forecastHour }: Mod
     }
 
     return { level, values: vals };
-  }, [models, parameter, enabledModels, forecastHour]);
+  }, [models, parameter, enabledModels, forecastHour, units]);
 
   const config = {
     high: { label: t("highConfidence"), color: "text-confidence-high", bg: "bg-confidence-high/10", barWidth: "w-full" },
@@ -69,7 +71,7 @@ const ModelConfidence = ({ models, parameter, enabledModels, forecastHour }: Mod
             <div className="w-2 h-2 rounded-full mx-auto mb-1" style={{ backgroundColor: v.color }} />
             <div className="text-xs text-muted-foreground font-body">{v.model}</div>
             <div className="text-sm font-heading font-semibold">
-              {v.value !== null && v.value !== undefined ? v.value : "-"}
+              {v.value !== null && v.value !== undefined ? smartRound(v.value, parameter, units) : "-"}
             </div>
           </div>
         ))}
