@@ -163,6 +163,45 @@ interface ParseResult {
   startTimeISO: string;
 }
 
+/**
+ * De-interpolate precipitation. When Open-Meteo returns 3h/6h precipitation
+ * for long-range data, it repeats the bucket total across each hour. Detect
+ * runs of identical non-zero values and divide so the per-hour value reflects
+ * a true hourly amount (sum of the run still equals the bucket total).
+ */
+function deinterpolatePrecip(arr: (number | null)[]): (number | null)[] {
+  const out = arr.slice();
+  let i = 0;
+  while (i < out.length) {
+    const v = out[i];
+    if (v == null || v === 0) { i++; continue; }
+    let j = i + 1;
+    while (j < out.length && out[j] === v) j++;
+    const runLen = j - i;
+    if (runLen >= 2) {
+      const per = v / runLen;
+      for (let k = i; k < j; k++) out[k] = per;
+    }
+    i = j;
+  }
+  return out;
+}
+
+/** Trim trailing entries where the primary signal (temperature) is null. */
+function trimTrailingNulls(
+  arrays: Record<string, (number | null)[]>,
+  hours: number[],
+  primaryKey: string
+): { hours: number[]; arrays: Record<string, (number | null)[]> } {
+  const primary = arrays[primaryKey];
+  let end = primary.length;
+  while (end > 0 && primary[end - 1] == null) end--;
+  if (end === primary.length) return { hours, arrays };
+  const trimmed: Record<string, (number | null)[]> = {};
+  for (const k of Object.keys(arrays)) trimmed[k] = arrays[k].slice(0, end);
+  return { hours: hours.slice(0, end), arrays: trimmed };
+}
+
 function parseModelResponse(data: any, modelName: string, color: string): ParseResult | null {
   const hourly = data.hourly;
   if (!hourly || !hourly.time || hourly.time.length === 0) return null;
@@ -171,26 +210,25 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
   const startTime = new Date(startTimeISO).getTime();
 
   const rawHours: number[] = [];
-  const rawTemp: number[] = [];
-  const rawPrecip: number[] = [];
-  const rawWind: number[] = [];
-  const rawGusts: number[] = [];
-  const rawPressure: number[] = [];
-  const rawHumidity: number[] = [];
-  const rawDew: number[] = [];
-  const rawCape: number[] = [];
-  const rawTemp850: number[] = [];
-  const rawTemp500: number[] = [];
-  const rawApparent: number[] = [];
-  const rawCloud: number[] = [];
+  const rawTemp: (number | null)[] = [];
+  const rawPrecip: (number | null)[] = [];
+  const rawWind: (number | null)[] = [];
+  const rawGusts: (number | null)[] = [];
+  const rawPressure: (number | null)[] = [];
+  const rawHumidity: (number | null)[] = [];
+  const rawDew: (number | null)[] = [];
+  const rawCape: (number | null)[] = [];
+  const rawTemp850: (number | null)[] = [];
+  const rawTemp500: (number | null)[] = [];
+  const rawApparent: (number | null)[] = [];
+  const rawCloud: (number | null)[] = [];
 
   for (let i = 0; i < hourly.time.length; i++) {
     const h = Math.round((new Date(hourly.time[i]).getTime() - startTime) / 3600000);
     if (h > MAX_HOURS) break;
-    if (hourly.temperature_2m[i] === null || hourly.temperature_2m[i] === undefined) break;
 
     rawHours.push(h);
-    rawTemp.push(hourly.temperature_2m[i] ?? null);
+    rawTemp.push(hourly.temperature_2m?.[i] ?? null);
     rawPrecip.push(hourly.precipitation?.[i] ?? null);
     rawWind.push(hourly.wind_speed_10m?.[i] ?? null);
     rawGusts.push(hourly.wind_gusts_10m?.[i] ?? null);
@@ -209,12 +247,9 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
 
   if (rawHours.length === 0) return null;
 
-  return {
-    startTimeISO,
-    model: {
-      model: modelName,
-      color,
-      hours: rawHours,
+  // Trim trailing nulls based on temperature (primary signal)
+  const { hours: trimmedHours, arrays } = trimTrailingNulls(
+    {
       temperature: rawTemp,
       precipitation: rawPrecip,
       windSpeed: rawWind,
@@ -227,6 +262,43 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
       temp500hPa: rawTemp500,
       apparentTemperature: rawApparent,
       cloudCover: rawCloud,
+    },
+    rawHours,
+    "temperature"
+  );
+
+  if (trimmedHours.length === 0) return null;
+
+  // De-interpolate precipitation (split repeated bucket totals)
+  const precip = deinterpolatePrecip(arrays.precipitation);
+
+  // Compute cumulative rain total
+  const precipTotal: (number | null)[] = [];
+  let acc = 0;
+  for (const v of precip) {
+    if (v != null) acc += v;
+    precipTotal.push(+acc.toFixed(2));
+  }
+
+  return {
+    startTimeISO,
+    model: {
+      model: modelName,
+      color,
+      hours: trimmedHours,
+      temperature: arrays.temperature as number[],
+      precipitation: precip as number[],
+      precipitationTotal: precipTotal as number[],
+      windSpeed: arrays.windSpeed as number[],
+      windGusts: arrays.windGusts as number[],
+      pressure: arrays.pressure as number[],
+      humidity: arrays.humidity as number[],
+      dewPoint: arrays.dewPoint as number[],
+      cape: arrays.cape as number[],
+      temp850hPa: arrays.temp850hPa as number[],
+      temp500hPa: arrays.temp500hPa as number[],
+      apparentTemperature: arrays.apparentTemperature as number[],
+      cloudCover: arrays.cloudCover as number[],
     },
   };
 }
