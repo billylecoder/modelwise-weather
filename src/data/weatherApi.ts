@@ -31,12 +31,13 @@ export const defaultLocation: Location = {
   country: "GR",
 };
 
-export type WeatherParam = "temperature" | "precipitation" | "windSpeed" | "windGusts" | "pressure" | "humidity" | "dewPoint" | "cape" | "temp850hPa" | "temp500hPa" | "apparentTemperature" | "cloudCover";
+export type WeatherParam = "temperature" | "precipitation" | "precipitationTotal" | "windSpeed" | "windGusts" | "pressure" | "humidity" | "dewPoint" | "cape" | "temp850hPa" | "temp500hPa" | "apparentTemperature" | "cloudCover";
 
 export const parameterConfig: Record<WeatherParam, { label: string; unit: string; icon: string }> = {
   temperature: { label: "Temperature", unit: "°C", icon: "Thermometer" },
   apparentTemperature: { label: "Feels Like", unit: "°C", icon: "Thermometer" },
   precipitation: { label: "Precipitation", unit: "mm", icon: "CloudRain" },
+  precipitationTotal: { label: "Rain Total", unit: "mm", icon: "CloudRain" },
   windSpeed: { label: "Wind Speed", unit: "km/h", icon: "Wind" },
   windGusts: { label: "Wind Gusts", unit: "km/h", icon: "Wind" },
   pressure: { label: "Pressure", unit: "hPa", icon: "Gauge" },
