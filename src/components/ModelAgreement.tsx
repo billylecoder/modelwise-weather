@@ -43,9 +43,8 @@ const ModelConfidence = ({ models, parameter, enabledModels, forecastHour }: Mod
       const max = Math.max(...validNumbers);
       const spread = max - min;
       const avg = validNumbers.reduce((a, b) => a + b, 0) / validNumbers.length;
-      const relSpread = avg !== 0 ? spread / Math.abs(avg) : 0;
-      if (relSpread > 0.3) level = "low";
-      else if (relSpread > 0.1) level = "medium";
+
+      level = computeConfidence(parameter, avg, spread);
     }
 
     return { level, values: vals };
