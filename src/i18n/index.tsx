@@ -15,6 +15,7 @@ const translations = {
     chartModels: "Chart Models",
     temperature: "Temperature",
     precipitation: "Precipitation",
+    precipitationTotal: "Rain Total",
     windSpeed: "Wind Speed",
     windGusts: "Wind Gusts",
     pressure: "Pressure",
@@ -64,6 +65,7 @@ const translations = {
     chartModels: "Μοντέλα Γραφημάτων",
     temperature: "Θερμοκρασία",
     precipitation: "Υετός",
+    precipitationTotal: "Σύνολο Βροχής",
     windSpeed: "Ταχύτητα Ανέμου",
     windGusts: "Ριπές Ανέμου",
     pressure: "Πίεση",
@@ -140,6 +142,7 @@ export const useI18n = () => useContext(I18nContext);
 export const paramTranslationKey: Record<string, TranslationKey> = {
   temperature: "temperature",
   precipitation: "precipitation",
+  precipitationTotal: "precipitationTotal",
   windSpeed: "windSpeed",
   windGusts: "windGusts",
   pressure: "pressure",

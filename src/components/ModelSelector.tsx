@@ -10,7 +10,7 @@ const iconMap: Record<string, React.ComponentType<any>> = {
 };
 
 const BASIC_PARAMS: WeatherParam[] = ["temperature", "apparentTemperature", "precipitation", "windSpeed", "humidity", "cloudCover"];
-const ADVANCED_PARAMS: WeatherParam[] = ["windGusts", "pressure", "dewPoint", "cape", "temp850hPa", "temp500hPa"];
+const ADVANCED_PARAMS: WeatherParam[] = ["precipitationTotal", "windGusts", "pressure", "dewPoint", "cape", "temp850hPa", "temp500hPa"];
 
 interface ModelSelectorProps {
   models: ModelForecast[];

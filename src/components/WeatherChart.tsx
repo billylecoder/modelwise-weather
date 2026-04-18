@@ -53,8 +53,18 @@ const WeatherChart = ({ models, parameter, enabledModels, showArea = false }: We
 
   const yDomain = useMemo<[number | string, number | string]>(() => {
     if (parameter === "pressure") {
-      // Fixed range — values outside will clip (hPa and mb share numeric values)
-      return [900, 1055];
+      // Default 990–1030; expand outward to nearest multiple of 5 using floor/ceil
+      // (e.g. 982 → 980 low, 1043 → 1045 high, 973 → 970 low).
+      let min = 990;
+      let max = 1030;
+      data.forEach((p) => {
+        Object.entries(p).forEach(([k, v]) => {
+          if (k === "hour" || typeof v !== "number") return;
+          if (v < min) min = Math.floor(v / 5) * 5;
+          if (v > max) max = Math.ceil(v / 5) * 5;
+        });
+      });
+      return [min, max];
     }
     if (parameter === "cape") {
       let max = 1500;
@@ -105,7 +115,6 @@ const WeatherChart = ({ models, parameter, enabledModels, showArea = false }: We
             tick={{ fill: "hsl(220, 10%, 55%)", fontSize: 11, fontFamily: "Manrope" }}
             stroke="hsl(235, 25%, 16%)"
             domain={yDomain}
-            allowDataOverflow={parameter === "pressure"}
             label={{ value: unitLabel, angle: -90, position: "insideLeft", fill: "hsl(220, 10%, 55%)", fontSize: 10, fontFamily: "Manrope", offset: 15 }}
           />
           <Tooltip content={<CustomTooltip />} />
