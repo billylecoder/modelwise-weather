@@ -8,6 +8,8 @@ import ParameterSelector from "@/components/ParameterSelector";
 import ModelToggle from "@/components/ModelToggle";
 import ForecastTimeline from "@/components/ForecastTimeline";
 import ModelSelector from "@/components/ModelSelector";
+import HourlyForecast from "@/components/HourlyForecast";
+import DailyForecast from "@/components/DailyForecast";
 import LanguageToggle from "@/components/LanguageToggle";
 import LocationSearch from "@/components/LocationSearch";
 import SettingsPanel from "@/components/SettingsPanel";
@@ -173,6 +175,10 @@ const Index = () => {
             forecastHour={forecastHour}
           />
         </div>
+
+        <HourlyForecast models={models} enabledModels={enabledModels} dataStartTime={dataStartTime} />
+
+        <DailyForecast models={models} enabledModels={enabledModels} dataStartTime={dataStartTime} />
 
         {/* Chart controls */}
         <div className="glass-card rounded-xl p-5">
