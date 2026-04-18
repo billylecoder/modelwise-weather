@@ -333,7 +333,7 @@ async function fetchDirectFromOpenMeteo(lat: number, lon: number): Promise<Fetch
   if (results.length > 1) {
     const maxLen = Math.max(...results.map((r) => r.hours.length));
     const longestHours = results.find((r) => r.hours.length === maxLen)!.hours;
-    const fields: (keyof ModelForecast)[] = ["temperature", "precipitation", "windSpeed", "windGusts", "pressure", "humidity", "dewPoint", "cape", "temp850hPa", "temp500hPa", "apparentTemperature", "cloudCover"];
+    const fields: (keyof ModelForecast)[] = ["temperature", "precipitation", "precipitationTotal", "windSpeed", "windGusts", "pressure", "humidity", "dewPoint", "cape", "temp850hPa", "temp500hPa", "apparentTemperature", "cloudCover"];
     for (const r of results) {
       if (r.hours.length < maxLen) {
         // Pad shorter models with null
