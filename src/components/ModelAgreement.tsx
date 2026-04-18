@@ -29,21 +29,22 @@ const ModelConfidence = ({ models, parameter, enabledModels, forecastHour }: Mod
           if (diff < minDiff) { minDiff = diff; hourIndex = i; }
         }
       }
-      const raw = m[parameter][hourIndex];
-      const converted = convertValue(raw as number | null | undefined, parameter, units);
-      return { model: m.model, value: converted, color: m.color };
+      const raw = m[parameter][hourIndex] as number | null | undefined;
+      const converted = convertValue(raw, parameter, units);
+      return { model: m.model, value: converted, raw: raw ?? null, color: m.color };
     });
 
-    // Only include non-null values in spread/confidence calculation
-    const validNumbers = vals.filter((v) => v.value !== null && v.value !== undefined).map((v) => v.value as number);
+    // Use RAW (canonical) values for confidence so thresholds in mm / km/h / J·kg⁻¹ apply correctly.
+    const rawNumbers = vals
+      .map((v) => v.raw)
+      .filter((v): v is number => v !== null && v !== undefined && !Number.isNaN(v));
 
     let level: "high" | "medium" | "low" = "high";
-    if (validNumbers.length >= 2) {
-      const min = Math.min(...validNumbers);
-      const max = Math.max(...validNumbers);
+    if (rawNumbers.length >= 2) {
+      const min = Math.min(...rawNumbers);
+      const max = Math.max(...rawNumbers);
       const spread = max - min;
-      const avg = validNumbers.reduce((a, b) => a + b, 0) / validNumbers.length;
-
+      const avg = rawNumbers.reduce((a, b) => a + b, 0) / rawNumbers.length;
       level = computeConfidence(parameter, avg, spread);
     }
 
