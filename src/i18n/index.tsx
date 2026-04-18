@@ -52,6 +52,8 @@ const translations = {
     unitsDescription: "Choose units for each parameter. Values convert instantly.",
     wind: "Wind",
     resetDefaults: "Reset to defaults",
+    hourlyForecast: "Next 24 Hours",
+    fiveDayForecast: "5-Day Forecast",
   },
   el: {
     appName: "WeatherIntel",
@@ -102,6 +104,8 @@ const translations = {
     unitsDescription: "Επιλέξτε μονάδες για κάθε παράμετρο. Οι τιμές μετατρέπονται άμεσα.",
     wind: "Άνεμος",
     resetDefaults: "Επαναφορά προεπιλογών",
+    hourlyForecast: "Επόμενες 24 Ώρες",
+    fiveDayForecast: "Πρόγνωση 5 Ημερών",
   },
 } as const;
 
