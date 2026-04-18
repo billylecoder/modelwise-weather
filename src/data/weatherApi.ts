@@ -4,6 +4,7 @@ export interface ModelForecast {
   hours: number[];
   temperature: number[];
   precipitation: number[];
+  precipitationTotal: number[];
   windSpeed: number[];
   windGusts: number[];
   pressure: number[];
