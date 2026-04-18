@@ -39,6 +39,7 @@ export function getCategory(param: WeatherParam): UnitCategory {
     case "temp500hPa":
       return "temperature";
     case "precipitation":
+    case "precipitationTotal":
       return "precipitation";
     case "windSpeed":
     case "windGusts":
