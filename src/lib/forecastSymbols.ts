@@ -14,9 +14,9 @@ export function rainLevel(mm: number): RainLevel {
 }
 
 export function cloudLevel(pct: number): CloudLevel {
-  if (pct < 30) return "sunny";
-  if (pct < 50) return "partly";
-  if (pct < 80) return "mostly";
+  if (pct < 35) return "sunny";
+  if (pct < 60) return "partly";
+  if (pct < 85) return "mostly";
   return "cloudy";
 }
 
