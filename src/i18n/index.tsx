@@ -26,6 +26,7 @@ const translations = {
     temp500hPa: "Temp 500hPa",
     apparentTemperature: "Feels Like",
     cloudCover: "Cloud Cover",
+    snowfall: "Snow",
     referenceOverlay: "Reference overlay",
     rainfallComparison: "Rainfall comparison",
     models: "models",
@@ -78,6 +79,7 @@ const translations = {
     temp500hPa: "Θερμ. 500hPa",
     apparentTemperature: "Αίσθηση",
     cloudCover: "Νεφοκάλυψη",
+    snowfall: "Χιόνι",
     referenceOverlay: "Επικάλυψη αναφοράς",
     rainfallComparison: "Σύγκριση βροχόπτωσης",
     models: "μοντέλα",
@@ -157,4 +159,5 @@ export const paramTranslationKey: Record<string, TranslationKey> = {
   temp500hPa: "temp500hPa",
   apparentTemperature: "apparentTemperature",
   cloudCover: "cloudCover",
+  snowfall: "snowfall",
 };

@@ -8,6 +8,7 @@ import {
   Droplets,
   Zap,
   Cloud,
+  Snowflake,
 } from "lucide-react";
 
 const iconMap: Record<string, React.ComponentType<any>> = {
@@ -18,6 +19,7 @@ const iconMap: Record<string, React.ComponentType<any>> = {
   Droplets,
   Zap,
   Cloud,
+  Snowflake,
 };
 
 interface ParameterSelectorProps {

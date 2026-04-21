@@ -15,6 +15,7 @@ export interface ModelForecast {
   temp500hPa: number[];
   apparentTemperature: number[];
   cloudCover: number[];
+  snowfall: number[];
 }
 
 export interface Location {
@@ -25,13 +26,28 @@ export interface Location {
 }
 
 export const defaultLocation: Location = {
-  name: "Kaisariani, Athens, Attica",
-  lat: 37.9637,
-  lon: 23.7584,
+  name: "Athens, Attica, Greece",
+  lat: 37.9838,
+  lon: 23.7275,
   country: "GR",
 };
 
-export type WeatherParam = "temperature" | "precipitation" | "precipitationTotal" | "windSpeed" | "windGusts" | "pressure" | "humidity" | "dewPoint" | "cape" | "temp850hPa" | "temp500hPa" | "apparentTemperature" | "cloudCover";
+export type WeatherParam = (
+  "temperature" |
+  "precipitation" |
+  "precipitationTotal" |
+  "windSpeed" |
+  "windGusts" |
+  "pressure" |
+  "humidity" |
+  "dewPoint" |
+  "cape" |
+  "temp850hPa" | 
+  "temp500hPa" |
+  "apparentTemperature" |
+  "cloudCover" |
+  "snowfall"
+);
 
 export const parameterConfig: Record<WeatherParam, { label: string; unit: string; icon: string }> = {
   temperature: { label: "Temperature", unit: "°C", icon: "Thermometer" },
@@ -47,6 +63,7 @@ export const parameterConfig: Record<WeatherParam, { label: string; unit: string
   cape: { label: "CAPE", unit: "J/kg", icon: "Zap" },
   temp850hPa: { label: "Temp 850hPa", unit: "°C", icon: "Thermometer" },
   temp500hPa: { label: "Temp 500hPa", unit: "°C", icon: "Thermometer" },
+  snowfall: {label: "New Snow", unit: "cm", icon: "Snowflake" },
 };
 
 // ---------------------------------------------------------------------------
@@ -149,6 +166,7 @@ const HOURLY_PARAMS = [
   "temperature_500hPa",
   "apparent_temperature",
   "cloud_cover",
+  "snowfall",
 ];
 
 const MAX_HOURS = 360;
@@ -222,6 +240,7 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
   const rawTemp500: (number | null)[] = [];
   const rawApparent: (number | null)[] = [];
   const rawCloud: (number | null)[] = [];
+  const rawSnow: (number | null)[] = [];
 
   for (let i = 0; i < hourly.time.length; i++) {
     const h = Math.round((new Date(hourly.time[i]).getTime() - startTime) / 3600000);
@@ -243,6 +262,7 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
     rawTemp500.push(hourly.temperature_500hPa?.[i] ?? null);
     rawApparent.push(hourly.apparent_temperature?.[i] ?? null);
     rawCloud.push(hourly.cloud_cover?.[i] ?? null);
+    rawSnow.push(hourly.snowfall?.[i] ?? null);
   }
 
   if (rawHours.length === 0) return null;
@@ -262,6 +282,7 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
       temp500hPa: rawTemp500,
       apparentTemperature: rawApparent,
       cloudCover: rawCloud,
+      snowfall: rawSnow,
     },
     rawHours,
     "temperature"
@@ -299,6 +320,7 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
       temp500hPa: arrays.temp500hPa as number[],
       apparentTemperature: arrays.apparentTemperature as number[],
       cloudCover: arrays.cloudCover as number[],
+      snowfall: arrays.snowfall as number[]
     },
   };
 }
@@ -333,7 +355,22 @@ async function fetchDirectFromOpenMeteo(lat: number, lon: number): Promise<Fetch
   if (results.length > 1) {
     const maxLen = Math.max(...results.map((r) => r.hours.length));
     const longestHours = results.find((r) => r.hours.length === maxLen)!.hours;
-    const fields: (keyof ModelForecast)[] = ["temperature", "precipitation", "precipitationTotal", "windSpeed", "windGusts", "pressure", "humidity", "dewPoint", "cape", "temp850hPa", "temp500hPa", "apparentTemperature", "cloudCover"];
+    const fields: (keyof ModelForecast)[] = [
+      "temperature",
+      "precipitation",
+      "precipitationTotal",
+      "windSpeed",
+      "windGusts",
+      "pressure",
+      "humidity",
+      "dewPoint",
+      "cape",
+      "temp850hPa",
+      "temp500hPa",
+      "apparentTemperature",
+      "cloudCover",
+      "snowfall",
+    ];
     for (const r of results) {
       if (r.hours.length < maxLen) {
         // Pad shorter models with null

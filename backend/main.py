@@ -39,6 +39,7 @@ HOURLY_PARAMS = [
     "temperature_500hPa",
     "apparent_temperature",
     "cloud_cover",
+    "snowfall",
 ]
 
 MAX_HOURS = 360
@@ -65,6 +66,7 @@ class ModelForecast(BaseModel):
     temp500hPa: list[float | None]
     apparentTemperature: list[float | None]
     cloudCover: list[float | None]
+    snowfall: list[float | None]
 
 
 class ForecastResponse(BaseModel):
@@ -109,6 +111,7 @@ def _parse_model(data: dict[str, Any], name: str, color: str) -> ModelForecast |
     temp500: list[float | None] = []
     apparent: list[float | None] = []
     cloud: list[float | None] = []
+    snow: list[float | None] = []
 
     for i, t in enumerate(times):
         h = round((datetime.fromisoformat(t).timestamp() * 1000 - start_ms) / 3_600_000)
@@ -136,6 +139,8 @@ def _parse_model(data: dict[str, Any], name: str, color: str) -> ModelForecast |
         apparent.append(app_arr[i] if i < len(app_arr) and app_arr[i] is not None else None)
         cloud_arr = hourly.get("cloud_cover") or []
         cloud.append(cloud_arr[i] if i < len(cloud_arr) and cloud_arr[i] is not None else None)
+        snow_arr = hourly.get("snowfall") or []
+        snow.append(snow_arr[i] if i < len(snow_arr) and snow_arr[i] is not None else None)
 
     if not hours:
         return None
@@ -156,6 +161,7 @@ def _parse_model(data: dict[str, Any], name: str, color: str) -> ModelForecast |
         temp500hPa=temp500,
         apparentTemperature=apparent,
         cloudCover=cloud,
+        snowfall=snow,
     )
 
 
@@ -227,7 +233,21 @@ async def get_forecast(
     # Pad shorter models with None so all share the longest timeline
     max_len = max(len(m.hours) for m in models)
     longest_hours = max(models, key=lambda m: len(m.hours)).hours
-    fields = ["temperature", "precipitation", "windSpeed", "windGusts", "pressure", "humidity", "dewPoint", "cape", "temp850hPa", "temp500hPa", "apparentTemperature", "cloudCover"]
+    fields = [
+        "temperature",
+        "precipitation",
+        "windSpeed",
+        "windGusts",
+        "pressure",
+        "humidity",
+        "dewPoint",
+        "cape",
+        "temp850hPa",
+        "temp500hPa",
+        "apparentTemperature",
+        "cloudCover",
+        "snowfall",
+    ]
     for m in models:
         if len(m.hours) < max_len:
             pad = max_len - len(m.hours)
