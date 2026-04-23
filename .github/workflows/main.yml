@@ -6,12 +6,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.13"
+
       - name: Install Ruff
         run: pip install ruff
+
       - name: Run Ruff Linting
         run: ruff check .
 
@@ -19,11 +22,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.13"
+
       - name: Install Ruff
         run: pip install ruff
+
       - name: Run Ruff Formatting Check
         run: ruff format --check .
+
+  frontend-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run Prettier Check
+        run: npx prettier --check "**/*.{js,jsx,ts,tsx,html,css,json}"
+  
