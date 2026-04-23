@@ -41,8 +41,12 @@ const Index = () => {
       setEnabledModels(data.map((m) => m.model));
       setSelectedModel(data[0].model);
       setLastRefresh(Date.now());
-    } catch (e: any) {
-      setError(e.message || "Failed to fetch weather data");
+    } catch (e: unknown) {
+      setError(
+        e instanceof Error
+          ? e.message
+          : "Failed to fetch weather data"
+      );
     } finally {
       setLoading(false);
     }
