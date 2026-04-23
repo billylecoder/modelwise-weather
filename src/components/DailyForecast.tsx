@@ -146,8 +146,8 @@ const DailyForecast = ({ models, enabledModels, dataStartTime }: DailyForecastPr
 };
 
 function pickDayIcons(d: DaySummary): {
-  primary: React.ComponentType<any>;
-  secondary?: React.ComponentType<any>;
+  primary: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  secondary?: React.ComponentType<React.SVGProps<SVGSVGElement>>;
 } {
   const rl = rainLevel(d.precipTotal);
   const cl = d.cloudAvg != null ? cloudLevel(d.cloudAvg) : "sunny";

@@ -5,7 +5,7 @@ import { useI18n, paramTranslationKey } from "@/i18n";
 import { useUnits } from "@/contexts/UnitsContext";
 import { formatValue, getUnitLabel } from "@/lib/units";
 
-const iconMap: Record<string, React.ComponentType<any>> = {
+const iconMap: Record<string, React.ComponentType<React.SVGProps<SVGSVGElement>>> = {
   Thermometer, CloudRain, Wind, Gauge, Droplets, Zap, Cloud, Snowflake,
 };
 

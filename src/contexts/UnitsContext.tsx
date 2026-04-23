@@ -22,14 +22,18 @@ export const UnitsProvider = ({ children }: { children: ReactNode }) => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) return { ...defaultUnits, ...JSON.parse(saved) };
-    } catch {}
+    } catch {
+      // Ignore invalid localStorage data
+    }
     return defaultUnits;
   });
 
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(units));
-    } catch {}
+    } catch {
+      // Ignore localStorage write failures
+    }
   }, [units]);
 
   const updateUnit = useCallback(<K extends keyof UnitPrefs>(key: K, value: UnitPrefs[K]) => {

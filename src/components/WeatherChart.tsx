@@ -6,6 +6,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  TooltipProps,
   ResponsiveContainer,
   Area,
   AreaChart,
@@ -80,12 +81,16 @@ const WeatherChart = ({ models, parameter, enabledModels, showArea = false }: We
 
   const activeModels = models.filter((m) => enabledModels.includes(m.model));
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({
+    active,
+    payload,
+    label,
+  }: TooltipProps<number, string>) => {
     if (!active || !payload) return null;
     return (
       <div className="glass-card rounded-lg p-3 border border-border/50">
         <p className="text-xs text-muted-foreground font-body mb-2">+{label}h</p>
-        {payload.map((entry: any) => (
+        {payload.map((entry) => (
           <div key={entry.dataKey} className="flex items-center gap-2 text-sm">
             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
             <span className="font-medium font-heading text-xs">{entry.dataKey}</span>

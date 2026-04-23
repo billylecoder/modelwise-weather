@@ -11,7 +11,7 @@ import {
   Snowflake,
 } from "lucide-react";
 
-const iconMap: Record<string, React.ComponentType<any>> = {
+const iconMap: Record<string, React.ComponentType<React.SVGProps<SVGSVGElement>>> = {
   Thermometer,
   CloudRain,
   Wind,

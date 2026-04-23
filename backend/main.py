@@ -20,10 +20,10 @@ from pydantic import BaseModel
 # ---------------------------------------------------------------------------
 
 MODEL_CONFIGS = [
-    {"id": "ecmwf_ifs025", "name": "ECMWF",   "color": "hsl(200, 80%, 55%)"},
-    {"id": "gfs_seamless",  "name": "GFS",     "color": "hsl(140, 70%, 50%)"},
+    {"id": "ecmwf_ifs025", "name": "ECMWF", "color": "hsl(200, 80%, 55%)"},
+    {"id": "gfs_seamless", "name": "GFS", "color": "hsl(140, 70%, 50%)"},
     {"id": "icon_seamless", "name": "ICON-EU", "color": "hsl(280, 70%, 60%)"},
-    {"id": "gem_seamless",  "name": "GEM",     "color": "hsl(30, 90%, 55%)"},
+    {"id": "gem_seamless", "name": "GEM", "color": "hsl(30, 90%, 55%)"},
 ]
 
 HOURLY_PARAMS = [
@@ -49,6 +49,7 @@ DEFAULT_LON = 23.7275
 # ---------------------------------------------------------------------------
 # Schemas
 # ---------------------------------------------------------------------------
+
 
 class ModelForecast(BaseModel):
     model: str
@@ -77,6 +78,7 @@ class ForecastResponse(BaseModel):
 # ---------------------------------------------------------------------------
 # Data fetching helpers
 # ---------------------------------------------------------------------------
+
 
 def _build_url(lat: float, lon: float, model_id: str) -> str:
     params = ",".join(HOURLY_PARAMS)
@@ -123,12 +125,36 @@ def _parse_model(data: dict[str, Any], name: str, color: str) -> ModelForecast |
 
         hours.append(h)
         temp.append(val or 0)
-        precip.append((hourly.get("precipitation") or [])[i] or 0 if i < len(hourly.get("precipitation", [])) else 0)
-        wind.append((hourly.get("wind_speed_10m") or [])[i] or 0 if i < len(hourly.get("wind_speed_10m", [])) else 0)
-        gusts.append((hourly.get("wind_gusts_10m") or [])[i] or 0 if i < len(hourly.get("wind_gusts_10m", [])) else 0)
-        pressure.append((hourly.get("pressure_msl") or [])[i] or 0 if i < len(hourly.get("pressure_msl", [])) else 0)
-        humidity.append((hourly.get("relative_humidity_2m") or [])[i] or 0 if i < len(hourly.get("relative_humidity_2m", [])) else 0)
-        dew.append((hourly.get("dew_point_2m") or [])[i] or 0 if i < len(hourly.get("dew_point_2m", [])) else 0)
+        precip.append(
+            (hourly.get("precipitation") or [])[i] or 0
+            if i < len(hourly.get("precipitation", []))
+            else 0
+        )
+        wind.append(
+            (hourly.get("wind_speed_10m") or [])[i] or 0
+            if i < len(hourly.get("wind_speed_10m", []))
+            else 0
+        )
+        gusts.append(
+            (hourly.get("wind_gusts_10m") or [])[i] or 0
+            if i < len(hourly.get("wind_gusts_10m", []))
+            else 0
+        )
+        pressure.append(
+            (hourly.get("pressure_msl") or [])[i] or 0
+            if i < len(hourly.get("pressure_msl", []))
+            else 0
+        )
+        humidity.append(
+            (hourly.get("relative_humidity_2m") or [])[i] or 0
+            if i < len(hourly.get("relative_humidity_2m", []))
+            else 0
+        )
+        dew.append(
+            (hourly.get("dew_point_2m") or [])[i] or 0
+            if i < len(hourly.get("dew_point_2m", []))
+            else 0
+        )
         cape.append((hourly.get("cape") or [])[i] or 0 if i < len(hourly.get("cape", [])) else 0)
 
         t850_arr = hourly.get("temperature_850hPa") or []
@@ -171,7 +197,9 @@ def _safe(arr: list | None, i: int) -> float:
     return 0.0
 
 
-async def _fetch_model(client: httpx.AsyncClient, cfg: dict, lat: float, lon: float) -> ModelForecast | None:
+async def _fetch_model(
+    client: httpx.AsyncClient, cfg: dict, lat: float, lon: float
+) -> ModelForecast | None:
     url = _build_url(lat, lon, cfg["id"])
     try:
         resp = await client.get(url, timeout=15)
