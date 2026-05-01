@@ -17,8 +17,14 @@ export interface ModelForecast {
   cloudCover: number[];
   snowfall: number[];
   snowDepth: number[];
-  uvIndex: number[];
-  aqi: number[];
+  dust: number[];
+}
+
+export interface AirInfo {
+  hours: number[];      // forecast hour offsets aligned to startTime
+  uvIndex: (number | null)[];
+  aqi: (number | null)[];
+  dust: (number | null)[];
 }
 
 export interface Location {
@@ -51,8 +57,7 @@ export type WeatherParam = (
   "cloudCover" |
   "snowfall" |
   "snowDepth" |
-  "uvIndex" |
-  "aqi"
+  "dust"
 );
 
 export const parameterConfig: Record<WeatherParam, { label: string; unit: string; icon: string }> = {
@@ -71,8 +76,7 @@ export const parameterConfig: Record<WeatherParam, { label: string; unit: string
   temp500hPa: { label: "Temp 500hPa", unit: "°C", icon: "Thermometer" },
   snowfall: { label: "New Snow", unit: "cm", icon: "Snowflake" },
   snowDepth: { label: "Snow Depth", unit: "cm", icon: "Snowflake" },
-  uvIndex: { label: "UV Index", unit: "", icon: "Sun" },
-  aqi: { label: "Air Quality", unit: "AQI", icon: "Wind" },
+  dust: { label: "Saharan Dust", unit: "µg/m³", icon: "Wind" },
 };
 
 // ---------------------------------------------------------------------------
@@ -146,6 +150,7 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL as string | undefined;
 export interface FetchResult {
   models: ModelForecast[];
   startTime: string;
+  airInfo?: AirInfo;
 }
 
 // ---------------------------------------------------------------------------
@@ -177,7 +182,6 @@ const HOURLY_PARAMS = [
   "cloud_cover",
   "snowfall",
   "snow_depth",
-  "uv_index",
 ];
 
 const MAX_HOURS = 360;
@@ -253,7 +257,6 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
   const rawCloud: (number | null)[] = [];
   const rawSnow: (number | null)[] = [];
   const rawSnowDepth: (number | null)[] = [];
-  const rawUv: (number | null)[] = [];
 
   for (let i = 0; i < hourly.time.length; i++) {
     const h = Math.round((new Date(hourly.time[i]).getTime() - startTime) / 3600000);
@@ -276,18 +279,12 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
     rawApparent.push(hourly.apparent_temperature?.[i] ?? null);
     rawCloud.push(hourly.cloud_cover?.[i] ?? null);
     {
-      // snowfall: cm/h, ensure non-negative
       const s = hourly.snowfall?.[i];
       rawSnow.push(s == null ? null : Math.max(0, s));
     }
     {
-      // snow_depth comes in meters → convert to cm and clamp to non-negative
       const sd = hourly.snow_depth?.[i];
       rawSnowDepth.push(sd == null ? null : Math.max(0, sd * 100));
-    }
-    {
-      const u = hourly.uv_index?.[i];
-      rawUv.push(u == null ? null : Math.max(0, u));
     }
   }
 
@@ -310,7 +307,6 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
       cloudCover: rawCloud,
       snowfall: rawSnow,
       snowDepth: rawSnowDepth,
-      uvIndex: rawUv,
     },
     rawHours,
     "temperature"
@@ -318,12 +314,9 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
 
   if (trimmedHours.length === 0) return null;
 
-  // De-interpolate precipitation (split repeated bucket totals)
   const precip = deinterpolatePrecip(arrays.precipitation);
-  // Snowfall can also be returned as repeated bucket totals (3h/6h) on long-range
   const snow = deinterpolatePrecip(arrays.snowfall);
 
-  // Compute cumulative rain total
   const precipTotal: (number | null)[] = [];
   let acc = 0;
   for (const v of precip) {
@@ -352,8 +345,7 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
       cloudCover: arrays.cloudCover as number[],
       snowfall: snow as number[],
       snowDepth: arrays.snowDepth as number[],
-      uvIndex: arrays.uvIndex as number[],
-      aqi: [] as number[],
+      dust: [] as number[],
     },
   };
 }
@@ -404,8 +396,7 @@ async function fetchDirectFromOpenMeteo(lat: number, lon: number): Promise<Fetch
       "cloudCover",
       "snowfall",
       "snowDepth",
-      "uvIndex",
-      "aqi",
+      "dust",
     ];
     for (const r of results) {
       if (r.hours.length < maxLen) {
@@ -419,43 +410,56 @@ async function fetchDirectFromOpenMeteo(lat: number, lon: number): Promise<Fetch
     }
   }
 
-  // Fetch AQI once (not model-specific) and broadcast to all models, aligned by hour.
+  // Fetch air-quality once (UV/AQI/dust) — used both for Info tab and as
+  // per-hour Saharan dust series broadcast to all models.
+  let airInfo: AirInfo | undefined;
   if (results.length > 0) {
     try {
-      const aqiByHour = await fetchAqi(lat, lon, valid[0].startTimeISO);
+      const air = await fetchAirQuality(lat, lon, valid[0].startTimeISO);
       const len = results[0].hours.length;
-      const aligned: number[] = [];
+      const dustAligned: number[] = [];
       for (let i = 0; i < len; i++) {
-        aligned.push((aqiByHour[i] ?? null) as unknown as number);
+        dustAligned.push((air.dust[i] ?? null) as unknown as number);
       }
-      for (const r of results) r.aqi = aligned;
+      for (const r of results) r.dust = dustAligned;
+      airInfo = air;
     } catch (e) {
-      console.warn("Failed to fetch AQI:", e);
+      console.warn("Failed to fetch air quality:", e);
     }
   }
 
-  return { models: results, startTime };
+  return { models: results, startTime, airInfo };
 }
 
-async function fetchAqi(lat: number, lon: number, startISO: string): Promise<(number | null)[]> {
-  const url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=european_aqi&forecast_days=5&timezone=auto`;
+async function fetchAirQuality(lat: number, lon: number, startISO: string): Promise<AirInfo> {
+  const url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=european_aqi,uv_index,dust&forecast_days=5&timezone=auto`;
   const res = await fetch(url);
-  if (!res.ok) throw new Error(`AQI HTTP ${res.status}`);
+  if (!res.ok) throw new Error(`Air-quality HTTP ${res.status}`);
   const data = await res.json();
   const times: string[] = data?.hourly?.time ?? [];
-  const vals: (number | null)[] = data?.hourly?.european_aqi ?? [];
-  if (times.length === 0) return [];
-  // Index by hour offset from startISO
+  const aqiVals: (number | null)[] = data?.hourly?.european_aqi ?? [];
+  const uvVals: (number | null)[] = data?.hourly?.uv_index ?? [];
+  const dustVals: (number | null)[] = data?.hourly?.dust ?? [];
   const startMs = new Date(startISO).getTime();
-  const out: (number | null)[] = [];
+  const aqi: (number | null)[] = [];
+  const uv: (number | null)[] = [];
+  const dust: (number | null)[] = [];
+  const hours: number[] = [];
   for (let i = 0; i < times.length; i++) {
     const h = Math.round((new Date(times[i]).getTime() - startMs) / 3600000);
     if (h < 0) continue;
-    out[h] = vals[i] ?? null;
+    aqi[h] = aqiVals[i] ?? null;
+    uv[h] = uvVals[i] ?? null;
+    dust[h] = dustVals[i] ?? null;
   }
-  // Fill any gaps with null
-  for (let i = 0; i < out.length; i++) if (out[i] === undefined) out[i] = null;
-  return out;
+  const len = Math.max(aqi.length, uv.length, dust.length);
+  for (let i = 0; i < len; i++) {
+    if (aqi[i] === undefined) aqi[i] = null;
+    if (uv[i] === undefined) uv[i] = null;
+    if (dust[i] === undefined) dust[i] = null;
+    hours.push(i);
+  }
+  return { hours, uvIndex: uv, aqi, dust };
 }
 
 // ---------------------------------------------------------------------------
