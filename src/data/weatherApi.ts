@@ -49,7 +49,10 @@ export type WeatherParam = (
   "temp500hPa" |
   "apparentTemperature" |
   "cloudCover" |
-  "snowfall"
+  "snowfall" |
+  "snowDepth" |
+  "uvIndex" |
+  "aqi"
 );
 
 export const parameterConfig: Record<WeatherParam, { label: string; unit: string; icon: string }> = {
@@ -66,7 +69,10 @@ export const parameterConfig: Record<WeatherParam, { label: string; unit: string
   cape: { label: "CAPE", unit: "J/kg", icon: "Zap" },
   temp850hPa: { label: "Temp 850hPa", unit: "°C", icon: "Thermometer" },
   temp500hPa: { label: "Temp 500hPa", unit: "°C", icon: "Thermometer" },
-  snowfall: {label: "New Snow", unit: "cm", icon: "Snowflake" },
+  snowfall: { label: "New Snow", unit: "cm", icon: "Snowflake" },
+  snowDepth: { label: "Snow Depth", unit: "cm", icon: "Snowflake" },
+  uvIndex: { label: "UV Index", unit: "", icon: "Sun" },
+  aqi: { label: "Air Quality", unit: "AQI", icon: "Wind" },
 };
 
 // ---------------------------------------------------------------------------
@@ -170,6 +176,8 @@ const HOURLY_PARAMS = [
   "apparent_temperature",
   "cloud_cover",
   "snowfall",
+  "snow_depth",
+  "uv_index",
 ];
 
 const MAX_HOURS = 360;
@@ -244,6 +252,8 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
   const rawApparent: (number | null)[] = [];
   const rawCloud: (number | null)[] = [];
   const rawSnow: (number | null)[] = [];
+  const rawSnowDepth: (number | null)[] = [];
+  const rawUv: (number | null)[] = [];
 
   for (let i = 0; i < hourly.time.length; i++) {
     const h = Math.round((new Date(hourly.time[i]).getTime() - startTime) / 3600000);
@@ -265,7 +275,20 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
     rawTemp500.push(hourly.temperature_500hPa?.[i] ?? null);
     rawApparent.push(hourly.apparent_temperature?.[i] ?? null);
     rawCloud.push(hourly.cloud_cover?.[i] ?? null);
-    rawSnow.push(hourly.snowfall?.[i] ?? null);
+    {
+      // snowfall: cm/h, ensure non-negative
+      const s = hourly.snowfall?.[i];
+      rawSnow.push(s == null ? null : Math.max(0, s));
+    }
+    {
+      // snow_depth comes in meters → convert to cm and clamp to non-negative
+      const sd = hourly.snow_depth?.[i];
+      rawSnowDepth.push(sd == null ? null : Math.max(0, sd * 100));
+    }
+    {
+      const u = hourly.uv_index?.[i];
+      rawUv.push(u == null ? null : Math.max(0, u));
+    }
   }
 
   if (rawHours.length === 0) return null;
