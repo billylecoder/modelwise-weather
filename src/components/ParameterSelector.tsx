@@ -9,6 +9,7 @@ import {
   Zap,
   Cloud,
   Snowflake,
+  Sun,
 } from "lucide-react";
 
 const iconMap: Record<string, React.ComponentType<React.SVGProps<SVGSVGElement>>> = {
@@ -20,6 +21,7 @@ const iconMap: Record<string, React.ComponentType<React.SVGProps<SVGSVGElement>>
   Zap,
   Cloud,
   Snowflake,
+  Sun,
 };
 
 interface ParameterSelectorProps {

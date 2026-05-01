@@ -2,7 +2,7 @@ import { Settings } from "lucide-react";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useUnits } from "@/contexts/UnitsContext";
 import { useI18n } from "@/i18n";
-import { TempUnit, PrecipUnit, WindUnit, PressureUnit, unitLabels } from "@/lib/units";
+import { TempUnit, PrecipUnit, WindUnit, PressureUnit, SnowUnit, unitLabels } from "@/lib/units";
 
 const Group = <T extends string>({
   label,
@@ -97,6 +97,16 @@ const SettingsPanel = () => {
             options={[
               { value: "hPa", label: "hPa" },
               { value: "mb", label: "mb" },
+            ]}
+          />
+          <Group<SnowUnit>
+            label={t("snowfall")}
+            value={units.snow}
+            onChange={(v) => updateUnit("snow", v)}
+            options={[
+              { value: "cm", label: "cm" },
+              { value: "in", label: "inches" },
+              { value: "mm", label: "mm" },
             ]}
           />
 
