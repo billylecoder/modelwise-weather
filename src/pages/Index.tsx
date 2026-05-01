@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Cloud, Layers, RefreshCw, Loader2, AlertTriangle } from "lucide-react";
-import { defaultLocation, WeatherParam, Location, ModelForecast } from "@/data/weatherApi";
+import { defaultLocation, WeatherParam, Location, ModelForecast, AirInfo } from "@/data/weatherApi";
 import { fetchWeatherData } from "@/data/weatherApi";
 import WeatherChart from "@/components/WeatherChart";
 import ModelConfidence from "@/components/ModelAgreement";
@@ -13,6 +13,7 @@ import DailyForecast from "@/components/DailyForecast";
 import LanguageToggle from "@/components/LanguageToggle";
 import LocationSearch from "@/components/LocationSearch";
 import SettingsPanel from "@/components/SettingsPanel";
+import InfoTab from "@/components/InfoTab";
 import { useI18n, paramTranslationKey } from "@/i18n";
 
 const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
@@ -29,15 +30,18 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dataStartTime, setDataStartTime] = useState<string>("");
+  const [airInfo, setAirInfo] = useState<AirInfo | undefined>(undefined);
+  const [activeTab, setActiveTab] = useState<"forecast" | "info">("forecast");
 
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const { models: data, startTime } = await fetchWeatherData(location.lat, location.lon);
+      const { models: data, startTime, airInfo: ai } = await fetchWeatherData(location.lat, location.lon);
       if (data.length === 0) throw new Error("No model data returned");
       setModels(data);
       setDataStartTime(startTime);
+      setAirInfo(ai);
       setEnabledModels(data.map((m) => m.model));
       setSelectedModel(data[0].model);
       setLastRefresh(Date.now());
