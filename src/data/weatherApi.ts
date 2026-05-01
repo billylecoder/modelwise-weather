@@ -419,7 +419,43 @@ async function fetchDirectFromOpenMeteo(lat: number, lon: number): Promise<Fetch
     }
   }
 
+  // Fetch AQI once (not model-specific) and broadcast to all models, aligned by hour.
+  if (results.length > 0) {
+    try {
+      const aqiByHour = await fetchAqi(lat, lon, valid[0].startTimeISO);
+      const len = results[0].hours.length;
+      const aligned: number[] = [];
+      for (let i = 0; i < len; i++) {
+        aligned.push((aqiByHour[i] ?? null) as unknown as number);
+      }
+      for (const r of results) r.aqi = aligned;
+    } catch (e) {
+      console.warn("Failed to fetch AQI:", e);
+    }
+  }
+
   return { models: results, startTime };
+}
+
+async function fetchAqi(lat: number, lon: number, startISO: string): Promise<(number | null)[]> {
+  const url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=european_aqi&forecast_days=5&timezone=auto`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`AQI HTTP ${res.status}`);
+  const data = await res.json();
+  const times: string[] = data?.hourly?.time ?? [];
+  const vals: (number | null)[] = data?.hourly?.european_aqi ?? [];
+  if (times.length === 0) return [];
+  // Index by hour offset from startISO
+  const startMs = new Date(startISO).getTime();
+  const out: (number | null)[] = [];
+  for (let i = 0; i < times.length; i++) {
+    const h = Math.round((new Date(times[i]).getTime() - startMs) / 3600000);
+    if (h < 0) continue;
+    out[h] = vals[i] ?? null;
+  }
+  // Fill any gaps with null
+  for (let i = 0; i < out.length; i++) if (out[i] === undefined) out[i] = null;
+  return out;
 }
 
 // ---------------------------------------------------------------------------
