@@ -82,6 +82,12 @@ function convertWind(kmh: number, u: WindUnit): number {
 function convertPressure(hpa: number, u: PressureUnit): number {
   return hpa; // hPa and mb are numerically identical
 }
+// snow raw input is cm (we normalized snow_depth m → cm in parser; snowfall is already cm)
+function convertSnow(cm: number, u: SnowUnit): number {
+  if (u === "in") return cm / 2.54;
+  if (u === "mm") return cm * 10;
+  return cm;
+}
 
 export function convertValue(
   raw: number | null | undefined,
@@ -99,6 +105,8 @@ export function convertValue(
       return convertWind(raw, prefs.wind);
     case "pressure":
       return convertPressure(raw, prefs.pressure);
+    case "snow":
+      return convertSnow(raw, prefs.snow);
     default:
       return raw;
   }
@@ -110,6 +118,7 @@ export function getUnitLabel(param: WeatherParam, prefs: UnitPrefs, fallback: st
   if (cat === "precipitation") return unitLabels.precipitation[prefs.precipitation];
   if (cat === "wind") return unitLabels.wind[prefs.wind];
   if (cat === "pressure") return unitLabels.pressure[prefs.pressure];
+  if (cat === "snow") return unitLabels.snow[prefs.snow];
   return fallback;
 }
 
@@ -129,8 +138,14 @@ export function smartRound(
 ): number {
   const cat = getCategory(param);
 
-  // Small-scale: inches
+  // Small-scale: inches (precip)
   if (cat === "precipitation" && prefs.precipitation === "in") {
+    const step = Math.abs(value) < 1 ? 0.05 : 0.1;
+    return +roundToStep(value, step).toFixed(2);
+  }
+
+  // Snow inches: similar small-scale rounding
+  if (cat === "snow" && prefs.snow === "in") {
     const step = Math.abs(value) < 1 ? 0.05 : 0.1;
     return +roundToStep(value, step).toFixed(2);
   }
@@ -148,7 +163,11 @@ export function smartRound(
     // mm and cm: 1 decimal
     return Math.round(value * 10) / 10;
   }
-  // humidity, cloud cover, cape: integer
+  if (cat === "snow") {
+    // cm and mm: 1 decimal
+    return Math.round(value * 10) / 10;
+  }
+  // humidity, cloud cover, cape, uv, aqi: integer
   return Math.round(value);
 }
 
