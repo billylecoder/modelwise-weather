@@ -5,12 +5,14 @@ export type TempUnit = "C" | "F";
 export type PrecipUnit = "mm" | "cm" | "in";
 export type WindUnit = "kmh" | "mph" | "kt" | "bf";
 export type PressureUnit = "hPa" | "mb";
+export type SnowUnit = "cm" | "in" | "mm";
 
 export interface UnitPrefs {
   temperature: TempUnit;
   precipitation: PrecipUnit;
   wind: WindUnit;
   pressure: PressureUnit;
+  snow: SnowUnit;
 }
 
 export const defaultUnits: UnitPrefs = {
@@ -18,6 +20,7 @@ export const defaultUnits: UnitPrefs = {
   precipitation: "mm",
   wind: "kmh",
   pressure: "hPa",
+  snow: "cm",
 };
 
 export const unitLabels = {
@@ -25,10 +28,11 @@ export const unitLabels = {
   precipitation: { mm: "mm", cm: "cm", in: "in" } as Record<PrecipUnit, string>,
   wind: { kmh: "km/h", mph: "mph", kt: "kt", bf: "bf" } as Record<WindUnit, string>,
   pressure: { hPa: "hPa", mb: "mb" } as Record<PressureUnit, string>,
+  snow: { cm: "cm", in: "in", mm: "mm" } as Record<SnowUnit, string>,
 };
 
 // Map weather params to a conversion category
-export type UnitCategory = "temperature" | "precipitation" | "wind" | "pressure" | "none";
+export type UnitCategory = "temperature" | "precipitation" | "wind" | "pressure" | "snow" | "none";
 
 export function getCategory(param: WeatherParam): UnitCategory {
   switch (param) {
@@ -46,6 +50,9 @@ export function getCategory(param: WeatherParam): UnitCategory {
       return "wind";
     case "pressure":
       return "pressure";
+    case "snowfall":
+    case "snowDepth":
+      return "snow";
     default:
       return "none";
   }
