@@ -309,6 +309,8 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
       apparentTemperature: rawApparent,
       cloudCover: rawCloud,
       snowfall: rawSnow,
+      snowDepth: rawSnowDepth,
+      uvIndex: rawUv,
     },
     rawHours,
     "temperature"
@@ -318,6 +320,8 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
 
   // De-interpolate precipitation (split repeated bucket totals)
   const precip = deinterpolatePrecip(arrays.precipitation);
+  // Snowfall can also be returned as repeated bucket totals (3h/6h) on long-range
+  const snow = deinterpolatePrecip(arrays.snowfall);
 
   // Compute cumulative rain total
   const precipTotal: (number | null)[] = [];
@@ -346,7 +350,10 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
       temp500hPa: arrays.temp500hPa as number[],
       apparentTemperature: arrays.apparentTemperature as number[],
       cloudCover: arrays.cloudCover as number[],
-      snowfall: arrays.snowfall as number[]
+      snowfall: snow as number[],
+      snowDepth: arrays.snowDepth as number[],
+      uvIndex: arrays.uvIndex as number[],
+      aqi: [] as number[],
     },
   };
 }
@@ -396,6 +403,9 @@ async function fetchDirectFromOpenMeteo(lat: number, lon: number): Promise<Fetch
       "apparentTemperature",
       "cloudCover",
       "snowfall",
+      "snowDepth",
+      "uvIndex",
+      "aqi",
     ];
     for (const r of results) {
       if (r.hours.length < maxLen) {
