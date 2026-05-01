@@ -150,6 +150,7 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL as string | undefined;
 export interface FetchResult {
   models: ModelForecast[];
   startTime: string;
+  airInfo?: AirInfo;
 }
 
 // ---------------------------------------------------------------------------
@@ -181,7 +182,6 @@ const HOURLY_PARAMS = [
   "cloud_cover",
   "snowfall",
   "snow_depth",
-  "uv_index",
 ];
 
 const MAX_HOURS = 360;
@@ -257,7 +257,6 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
   const rawCloud: (number | null)[] = [];
   const rawSnow: (number | null)[] = [];
   const rawSnowDepth: (number | null)[] = [];
-  const rawUv: (number | null)[] = [];
 
   for (let i = 0; i < hourly.time.length; i++) {
     const h = Math.round((new Date(hourly.time[i]).getTime() - startTime) / 3600000);
@@ -280,18 +279,12 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
     rawApparent.push(hourly.apparent_temperature?.[i] ?? null);
     rawCloud.push(hourly.cloud_cover?.[i] ?? null);
     {
-      // snowfall: cm/h, ensure non-negative
       const s = hourly.snowfall?.[i];
       rawSnow.push(s == null ? null : Math.max(0, s));
     }
     {
-      // snow_depth comes in meters → convert to cm and clamp to non-negative
       const sd = hourly.snow_depth?.[i];
       rawSnowDepth.push(sd == null ? null : Math.max(0, sd * 100));
-    }
-    {
-      const u = hourly.uv_index?.[i];
-      rawUv.push(u == null ? null : Math.max(0, u));
     }
   }
 
@@ -314,7 +307,6 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
       cloudCover: rawCloud,
       snowfall: rawSnow,
       snowDepth: rawSnowDepth,
-      uvIndex: rawUv,
     },
     rawHours,
     "temperature"
@@ -322,12 +314,9 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
 
   if (trimmedHours.length === 0) return null;
 
-  // De-interpolate precipitation (split repeated bucket totals)
   const precip = deinterpolatePrecip(arrays.precipitation);
-  // Snowfall can also be returned as repeated bucket totals (3h/6h) on long-range
   const snow = deinterpolatePrecip(arrays.snowfall);
 
-  // Compute cumulative rain total
   const precipTotal: (number | null)[] = [];
   let acc = 0;
   for (const v of precip) {
@@ -356,8 +345,7 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
       cloudCover: arrays.cloudCover as number[],
       snowfall: snow as number[],
       snowDepth: arrays.snowDepth as number[],
-      uvIndex: arrays.uvIndex as number[],
-      aqi: [] as number[],
+      dust: [] as number[],
     },
   };
 }
