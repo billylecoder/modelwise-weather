@@ -5,12 +5,14 @@ export type TempUnit = "C" | "F";
 export type PrecipUnit = "mm" | "cm" | "in";
 export type WindUnit = "kmh" | "mph" | "kt" | "bf";
 export type PressureUnit = "hPa" | "mb";
+export type SnowUnit = "cm" | "in" | "mm";
 
 export interface UnitPrefs {
   temperature: TempUnit;
   precipitation: PrecipUnit;
   wind: WindUnit;
   pressure: PressureUnit;
+  snow: SnowUnit;
 }
 
 export const defaultUnits: UnitPrefs = {
@@ -18,6 +20,7 @@ export const defaultUnits: UnitPrefs = {
   precipitation: "mm",
   wind: "kmh",
   pressure: "hPa",
+  snow: "cm",
 };
 
 export const unitLabels = {
@@ -25,10 +28,11 @@ export const unitLabels = {
   precipitation: { mm: "mm", cm: "cm", in: "in" } as Record<PrecipUnit, string>,
   wind: { kmh: "km/h", mph: "mph", kt: "kt", bf: "bf" } as Record<WindUnit, string>,
   pressure: { hPa: "hPa", mb: "mb" } as Record<PressureUnit, string>,
+  snow: { cm: "cm", in: "in", mm: "mm" } as Record<SnowUnit, string>,
 };
 
 // Map weather params to a conversion category
-export type UnitCategory = "temperature" | "precipitation" | "wind" | "pressure" | "none";
+export type UnitCategory = "temperature" | "precipitation" | "wind" | "pressure" | "snow" | "none";
 
 export function getCategory(param: WeatherParam): UnitCategory {
   switch (param) {
@@ -46,6 +50,9 @@ export function getCategory(param: WeatherParam): UnitCategory {
       return "wind";
     case "pressure":
       return "pressure";
+    case "snowfall":
+    case "snowDepth":
+      return "snow";
     default:
       return "none";
   }
@@ -75,6 +82,12 @@ function convertWind(kmh: number, u: WindUnit): number {
 function convertPressure(hpa: number, u: PressureUnit): number {
   return hpa; // hPa and mb are numerically identical
 }
+// snow raw input is cm (we normalized snow_depth m → cm in parser; snowfall is already cm)
+function convertSnow(cm: number, u: SnowUnit): number {
+  if (u === "in") return cm / 2.54;
+  if (u === "mm") return cm * 10;
+  return cm;
+}
 
 export function convertValue(
   raw: number | null | undefined,
@@ -92,6 +105,8 @@ export function convertValue(
       return convertWind(raw, prefs.wind);
     case "pressure":
       return convertPressure(raw, prefs.pressure);
+    case "snow":
+      return convertSnow(raw, prefs.snow);
     default:
       return raw;
   }
@@ -103,6 +118,7 @@ export function getUnitLabel(param: WeatherParam, prefs: UnitPrefs, fallback: st
   if (cat === "precipitation") return unitLabels.precipitation[prefs.precipitation];
   if (cat === "wind") return unitLabels.wind[prefs.wind];
   if (cat === "pressure") return unitLabels.pressure[prefs.pressure];
+  if (cat === "snow") return unitLabels.snow[prefs.snow];
   return fallback;
 }
 
@@ -122,8 +138,14 @@ export function smartRound(
 ): number {
   const cat = getCategory(param);
 
-  // Small-scale: inches
+  // Small-scale: inches (precip)
   if (cat === "precipitation" && prefs.precipitation === "in") {
+    const step = Math.abs(value) < 1 ? 0.05 : 0.1;
+    return +roundToStep(value, step).toFixed(2);
+  }
+
+  // Snow inches: similar small-scale rounding
+  if (cat === "snow" && prefs.snow === "in") {
     const step = Math.abs(value) < 1 ? 0.05 : 0.1;
     return +roundToStep(value, step).toFixed(2);
   }
@@ -141,7 +163,11 @@ export function smartRound(
     // mm and cm: 1 decimal
     return Math.round(value * 10) / 10;
   }
-  // humidity, cloud cover, cape: integer
+  if (cat === "snow") {
+    // cm and mm: 1 decimal
+    return Math.round(value * 10) / 10;
+  }
+  // humidity, cloud cover, cape, uv, aqi: integer
   return Math.round(value);
 }
 
