@@ -16,6 +16,9 @@ export interface ModelForecast {
   apparentTemperature: number[];
   cloudCover: number[];
   snowfall: number[];
+  snowDepth: number[];
+  uvIndex: number[];
+  aqi: number[];
 }
 
 export interface Location {
