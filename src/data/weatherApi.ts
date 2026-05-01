@@ -17,8 +17,14 @@ export interface ModelForecast {
   cloudCover: number[];
   snowfall: number[];
   snowDepth: number[];
-  uvIndex: number[];
-  aqi: number[];
+  dust: number[];
+}
+
+export interface AirInfo {
+  hours: number[];      // forecast hour offsets aligned to startTime
+  uvIndex: (number | null)[];
+  aqi: (number | null)[];
+  dust: (number | null)[];
 }
 
 export interface Location {
@@ -51,8 +57,7 @@ export type WeatherParam = (
   "cloudCover" |
   "snowfall" |
   "snowDepth" |
-  "uvIndex" |
-  "aqi"
+  "dust"
 );
 
 export const parameterConfig: Record<WeatherParam, { label: string; unit: string; icon: string }> = {
@@ -71,8 +76,7 @@ export const parameterConfig: Record<WeatherParam, { label: string; unit: string
   temp500hPa: { label: "Temp 500hPa", unit: "°C", icon: "Thermometer" },
   snowfall: { label: "New Snow", unit: "cm", icon: "Snowflake" },
   snowDepth: { label: "Snow Depth", unit: "cm", icon: "Snowflake" },
-  uvIndex: { label: "UV Index", unit: "", icon: "Sun" },
-  aqi: { label: "Air Quality", unit: "AQI", icon: "Wind" },
+  dust: { label: "Saharan Dust", unit: "µg/m³", icon: "Wind" },
 };
 
 // ---------------------------------------------------------------------------
