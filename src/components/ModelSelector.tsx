@@ -27,8 +27,21 @@ const ModelSelector = ({ models, selectedModel, onSelectModel, forecastHour }: M
   const { t } = useI18n();
   const { units } = useUnits();
   const [showAdvanced, setShowAdvanced] = useState(false);
+
+  if (!models || models.length === 0) {
+    return (
+      <div className="text-center text-sm text-muted-foreground py-4">
+        Loading models...
+      </div>
+    );
+  }
+
   const active = models.find((m) => m.model === selectedModel) ?? models[0];
-  
+
+  if (!active?.hours?.length) {
+    return null;
+  }
+
   // Find closest hour index
   let hourIndex = active.hours.indexOf(forecastHour);
   if (hourIndex === -1) {
