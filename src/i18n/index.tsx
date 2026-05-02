@@ -63,6 +63,11 @@ const translations = {
     resetDefaults: "Reset to defaults",
     hourlyForecast: "Next 24 Hours",
     fiveDayForecast: "5-Day Forecast",
+    pickLocationTitle: "Choose a location to start",
+    useMyLocation: "Use my current location",
+    tapMapHint: "Tap the map or drag the pin to choose a location.",
+    confirmLocation: "Use this location",
+    changeLocation: "Change location",
   },
   el: {
     appName: "WeatherIntel",
@@ -124,6 +129,11 @@ const translations = {
     resetDefaults: "Επαναφορά προεπιλογών",
     hourlyForecast: "Επόμενες 24 Ώρες",
     fiveDayForecast: "Πρόγνωση 5 Ημερών",
+    pickLocationTitle: "Επιλέξτε τοποθεσία για να ξεκινήσετε",
+    useMyLocation: "Χρήση της τοποθεσίας μου",
+    tapMapHint: "Πατήστε στον χάρτη ή σύρετε την καρφίτσα για επιλογή.",
+    confirmLocation: "Χρήση αυτής της τοποθεσίας",
+    changeLocation: "Αλλαγή τοποθεσίας",
   },
 } as const;
 

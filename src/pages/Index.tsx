@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Cloud, Layers, RefreshCw, Loader2, AlertTriangle } from "lucide-react";
-import { defaultLocation, WeatherParam, Location, ModelForecast, AirInfo } from "@/data/weatherApi";
+import { WeatherParam, Location, ModelForecast, AirInfo } from "@/data/weatherApi";
 import { fetchWeatherData } from "@/data/weatherApi";
 import WeatherChart from "@/components/WeatherChart";
 import ModelConfidence from "@/components/ModelAgreement";
@@ -12,28 +12,48 @@ import HourlyForecast from "@/components/HourlyForecast";
 import DailyForecast from "@/components/DailyForecast";
 import LanguageToggle from "@/components/LanguageToggle";
 import LocationSearch from "@/components/LocationSearch";
+import LocationPickerScreen from "@/components/LocationPickerScreen";
 import SettingsPanel from "@/components/SettingsPanel";
 import InfoTab from "@/components/InfoTab";
 import { useI18n, paramTranslationKey } from "@/i18n";
 
 const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
+const STORAGE_KEY = "wi:location";
+
+function loadStoredLocation(): Location | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const v = JSON.parse(raw);
+    if (typeof v?.lat === "number" && typeof v?.lon === "number" && typeof v?.name === "string") {
+      return { name: v.name, lat: v.lat, lon: v.lon, country: v.country ?? "" };
+    }
+  } catch {}
+  return null;
+}
 
 const Index = () => {
   const { t } = useI18n();
-  const [location, setLocation] = useState<Location>(defaultLocation);
+  const [location, setLocation] = useState<Location | null>(() => loadStoredLocation());
   const [selectedParam, setSelectedParam] = useState<WeatherParam>("temperature");
   const [models, setModels] = useState<ModelForecast[]>([]);
   const [enabledModels, setEnabledModels] = useState<string[]>([]);
   const [timelineIndex, setTimelineIndex] = useState(0);
   const [selectedModel, setSelectedModel] = useState("");
   const [lastRefresh, setLastRefresh] = useState(Date.now());
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dataStartTime, setDataStartTime] = useState<string>("");
   const [airInfo, setAirInfo] = useState<AirInfo | undefined>(undefined);
   const [activeTab, setActiveTab] = useState<"forecast" | "info">("forecast");
 
+  const updateLocation = useCallback((loc: Location) => {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(loc)); } catch {}
+    setLocation(loc);
+  }, []);
+
   const loadData = useCallback(async () => {
+    if (!location) return;
     setLoading(true);
     setError(null);
     try {
@@ -46,24 +66,21 @@ const Index = () => {
       setSelectedModel(data[0].model);
       setLastRefresh(Date.now());
     } catch (e: unknown) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : "Failed to fetch weather data"
-      );
+      setError(e instanceof Error ? e.message : "Failed to fetch weather data");
     } finally {
       setLoading(false);
     }
-  }, [location.lat, location.lon]);
+  }, [location]);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    if (location) loadData();
+  }, [loadData, location]);
 
   useEffect(() => {
+    if (!location) return;
     const interval = setInterval(loadData, SIX_HOURS_MS);
     return () => clearInterval(interval);
-  }, [loadData]);
+  }, [loadData, location]);
 
   const forecastHour = models[0]?.hours[timelineIndex] ?? 0;
   const showReliabilityWarning = forecastHour > 120;
@@ -86,6 +103,10 @@ const Index = () => {
     const key = paramTranslationKey[param];
     return key ? t(key) : param;
   };
+
+  if (!location) {
+    return <LocationPickerScreen onSelect={updateLocation} />;
+  }
 
   if (loading && models.length === 0) {
     return (
@@ -124,7 +145,7 @@ const Index = () => {
             </div>
           </div>
 
-          <LocationSearch currentLocation={location} onSelectLocation={setLocation} />
+          <LocationSearch currentLocation={location} onSelectLocation={updateLocation} />
 
           <div className="flex items-center gap-4 text-xs text-muted-foreground font-body">
             <SettingsPanel />
