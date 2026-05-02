@@ -17,7 +17,6 @@ export interface ModelForecast {
   cloudCover: number[];
   snowfall: number[];
   snowDepth: number[];
-  dust: number[];
 }
 
 export interface AirInfo {
@@ -56,8 +55,7 @@ export type WeatherParam = (
   "apparentTemperature" |
   "cloudCover" |
   "snowfall" |
-  "snowDepth" |
-  "dust"
+  "snowDepth"
 );
 
 export const parameterConfig: Record<WeatherParam, { label: string; unit: string; icon: string }> = {
@@ -76,7 +74,6 @@ export const parameterConfig: Record<WeatherParam, { label: string; unit: string
   temp500hPa: { label: "Temp 500hPa", unit: "°C", icon: "Thermometer" },
   snowfall: { label: "New Snow", unit: "cm", icon: "Snowflake" },
   snowDepth: { label: "Snow Depth", unit: "cm", icon: "Snowflake" },
-  dust: { label: "Saharan Dust", unit: "µg/m³", icon: "Wind" },
 };
 
 // ---------------------------------------------------------------------------
@@ -345,7 +342,6 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
       cloudCover: arrays.cloudCover as number[],
       snowfall: snow as number[],
       snowDepth: arrays.snowDepth as number[],
-      dust: [] as number[],
     },
   };
 }
@@ -396,7 +392,6 @@ async function fetchDirectFromOpenMeteo(lat: number, lon: number): Promise<Fetch
       "cloudCover",
       "snowfall",
       "snowDepth",
-      "dust",
     ];
     for (const r of results) {
       if (r.hours.length < maxLen) {
@@ -410,19 +405,11 @@ async function fetchDirectFromOpenMeteo(lat: number, lon: number): Promise<Fetch
     }
   }
 
-  // Fetch air-quality once (UV/AQI/dust) — used both for Info tab and as
-  // per-hour Saharan dust series broadcast to all models.
+  // Fetch air-quality once (UV/AQI from Open-Meteo, Saharan dust from Copernicus CAMS Europe).
   let airInfo: AirInfo | undefined;
   if (results.length > 0) {
     try {
-      const air = await fetchAirQuality(lat, lon, valid[0].startTimeISO);
-      const len = results[0].hours.length;
-      const dustAligned: number[] = [];
-      for (let i = 0; i < len; i++) {
-        dustAligned.push((air.dust[i] ?? null) as unknown as number);
-      }
-      for (const r of results) r.dust = dustAligned;
-      airInfo = air;
+      airInfo = await fetchAirQuality(lat, lon, valid[0].startTimeISO);
     } catch (e) {
       console.warn("Failed to fetch air quality:", e);
     }
@@ -432,26 +419,43 @@ async function fetchDirectFromOpenMeteo(lat: number, lon: number): Promise<Fetch
 }
 
 async function fetchAirQuality(lat: number, lon: number, startISO: string): Promise<AirInfo> {
-  const url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=european_aqi,uv_index,dust&forecast_days=5&timezone=auto`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Air-quality HTTP ${res.status}`);
-  const data = await res.json();
+  // UV + European AQI from default Open-Meteo air-quality
+  const baseUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=european_aqi,uv_index&forecast_days=5&timezone=auto`;
+  // Saharan dust from Copernicus CAMS Europe domain
+  const dustUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=dust&domains=cams_europe&forecast_days=5&timezone=auto`;
+
+  const [baseRes, dustRes] = await Promise.all([fetch(baseUrl), fetch(dustUrl)]);
+  if (!baseRes.ok) throw new Error(`Air-quality HTTP ${baseRes.status}`);
+  const data = await baseRes.json();
+  const dustData = dustRes.ok ? await dustRes.json() : null;
+
   const times: string[] = data?.hourly?.time ?? [];
   const aqiVals: (number | null)[] = data?.hourly?.european_aqi ?? [];
   const uvVals: (number | null)[] = data?.hourly?.uv_index ?? [];
-  const dustVals: (number | null)[] = data?.hourly?.dust ?? [];
   const startMs = new Date(startISO).getTime();
   const aqi: (number | null)[] = [];
   const uv: (number | null)[] = [];
   const dust: (number | null)[] = [];
   const hours: number[] = [];
+
   for (let i = 0; i < times.length; i++) {
     const h = Math.round((new Date(times[i]).getTime() - startMs) / 3600000);
     if (h < 0) continue;
     aqi[h] = aqiVals[i] ?? null;
     uv[h] = uvVals[i] ?? null;
-    dust[h] = dustVals[i] ?? null;
   }
+
+  // Map Copernicus dust onto the same hour offsets
+  if (dustData) {
+    const dTimes: string[] = dustData?.hourly?.time ?? [];
+    const dVals: (number | null)[] = dustData?.hourly?.dust ?? [];
+    for (let i = 0; i < dTimes.length; i++) {
+      const h = Math.round((new Date(dTimes[i]).getTime() - startMs) / 3600000);
+      if (h < 0) continue;
+      dust[h] = dVals[i] ?? null;
+    }
+  }
+
   const len = Math.max(aqi.length, uv.length, dust.length);
   for (let i = 0; i < len; i++) {
     if (aqi[i] === undefined) aqi[i] = null;

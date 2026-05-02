@@ -13,7 +13,7 @@ const BASIC_PARAMS: WeatherParam[] = [
   "temperature", "apparentTemperature", "precipitation", "windSpeed", "humidity", "cloudCover", "snowfall",
 ];
 const ADVANCED_PARAMS: WeatherParam[] = [
-  "precipitationTotal", "windGusts", "pressure", "dewPoint", "cape", "temp850hPa", "temp500hPa", "snowDepth", "dust",
+  "precipitationTotal", "windGusts", "pressure", "dewPoint", "cape", "temp850hPa", "temp500hPa", "snowDepth",
 ];
 
 interface ModelSelectorProps {
