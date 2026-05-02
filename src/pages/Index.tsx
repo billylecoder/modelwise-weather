@@ -53,6 +53,7 @@ const Index = () => {
   }, []);
 
   const loadData = useCallback(async () => {
+    if (!location) return;
     setLoading(true);
     setError(null);
     try {
@@ -65,24 +66,21 @@ const Index = () => {
       setSelectedModel(data[0].model);
       setLastRefresh(Date.now());
     } catch (e: unknown) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : "Failed to fetch weather data"
-      );
+      setError(e instanceof Error ? e.message : "Failed to fetch weather data");
     } finally {
       setLoading(false);
     }
-  }, [location.lat, location.lon]);
+  }, [location]);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    if (location) loadData();
+  }, [loadData, location]);
 
   useEffect(() => {
+    if (!location) return;
     const interval = setInterval(loadData, SIX_HOURS_MS);
     return () => clearInterval(interval);
-  }, [loadData]);
+  }, [loadData, location]);
 
   const forecastHour = models[0]?.hours[timelineIndex] ?? 0;
   const showReliabilityWarning = forecastHour > 120;
