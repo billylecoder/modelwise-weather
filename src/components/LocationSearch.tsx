@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Search, MapPin, Loader2, Navigation } from "lucide-react";
 import { Location } from "@/data/weatherApi";
 import { useI18n } from "@/i18n";
+import LocationMap from "@/components/LocationMap";
 
 interface GeoResult {
   id: number;
@@ -170,6 +171,19 @@ export default function LocationSearch({ currentLocation, onSelectLocation }: Pr
                 }}
               />
             </div>
+          </div>
+
+          {/* Map preview */}
+          <div className="p-2 border-b border-border/30">
+            <LocationMap
+              lat={coordHint?.lat ?? currentLocation.lat}
+              lon={coordHint?.lon ?? currentLocation.lon}
+              zoom={9}
+              height={140}
+              interactive
+              onPick={(lat, lon) => applyCoords(lat, lon)}
+            />
+            <p className="text-[10px] text-muted-foreground font-body mt-1">{t("tapMapHint")}</p>
           </div>
 
           {/* Coordinate hint */}
