@@ -34,18 +34,23 @@ function loadStoredLocation(): Location | null {
 
 const Index = () => {
   const { t } = useI18n();
-  const [location, setLocation] = useState<Location>(defaultLocation);
+  const [location, setLocation] = useState<Location | null>(() => loadStoredLocation());
   const [selectedParam, setSelectedParam] = useState<WeatherParam>("temperature");
   const [models, setModels] = useState<ModelForecast[]>([]);
   const [enabledModels, setEnabledModels] = useState<string[]>([]);
   const [timelineIndex, setTimelineIndex] = useState(0);
   const [selectedModel, setSelectedModel] = useState("");
   const [lastRefresh, setLastRefresh] = useState(Date.now());
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dataStartTime, setDataStartTime] = useState<string>("");
   const [airInfo, setAirInfo] = useState<AirInfo | undefined>(undefined);
   const [activeTab, setActiveTab] = useState<"forecast" | "info">("forecast");
+
+  const updateLocation = useCallback((loc: Location) => {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(loc)); } catch {}
+    setLocation(loc);
+  }, []);
 
   const loadData = useCallback(async () => {
     setLoading(true);
