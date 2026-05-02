@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Cloud, Layers, RefreshCw, Loader2, AlertTriangle } from "lucide-react";
-import { defaultLocation, WeatherParam, Location, ModelForecast, AirInfo } from "@/data/weatherApi";
+import { WeatherParam, Location, ModelForecast, AirInfo } from "@/data/weatherApi";
 import { fetchWeatherData } from "@/data/weatherApi";
 import WeatherChart from "@/components/WeatherChart";
 import ModelConfidence from "@/components/ModelAgreement";
@@ -12,11 +12,25 @@ import HourlyForecast from "@/components/HourlyForecast";
 import DailyForecast from "@/components/DailyForecast";
 import LanguageToggle from "@/components/LanguageToggle";
 import LocationSearch from "@/components/LocationSearch";
+import LocationPickerScreen from "@/components/LocationPickerScreen";
 import SettingsPanel from "@/components/SettingsPanel";
 import InfoTab from "@/components/InfoTab";
 import { useI18n, paramTranslationKey } from "@/i18n";
 
 const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
+const STORAGE_KEY = "wi:location";
+
+function loadStoredLocation(): Location | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const v = JSON.parse(raw);
+    if (typeof v?.lat === "number" && typeof v?.lon === "number" && typeof v?.name === "string") {
+      return { name: v.name, lat: v.lat, lon: v.lon, country: v.country ?? "" };
+    }
+  } catch {}
+  return null;
+}
 
 const Index = () => {
   const { t } = useI18n();
