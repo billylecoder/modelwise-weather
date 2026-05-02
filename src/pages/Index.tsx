@@ -104,6 +104,10 @@ const Index = () => {
     return key ? t(key) : param;
   };
 
+  if (!location) {
+    return <LocationPickerScreen onSelect={updateLocation} />;
+  }
+
   if (loading && models.length === 0) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -141,7 +145,7 @@ const Index = () => {
             </div>
           </div>
 
-          <LocationSearch currentLocation={location} onSelectLocation={setLocation} />
+          <LocationSearch currentLocation={location} onSelectLocation={updateLocation} />
 
           <div className="flex items-center gap-4 text-xs text-muted-foreground font-body">
             <SettingsPanel />
