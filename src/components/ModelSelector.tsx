@@ -4,6 +4,7 @@ import { Thermometer, CloudRain, Snowflake, Wind, Gauge, Droplets, Zap, Cloud, S
 import { useI18n, paramTranslationKey } from "@/i18n";
 import { useUnits } from "@/contexts/UnitsContext";
 import { formatValue, getUnitLabel } from "@/lib/units";
+import { degToCardinal } from "@/lib/wind";
 
 const iconMap: Record<string, React.ComponentType<React.SVGProps<SVGSVGElement>>> = {
   Thermometer, CloudRain, Wind, Gauge, Droplets, Zap, Cloud, Snowflake, Sun, Compass,
@@ -59,15 +60,27 @@ const ModelSelector = ({ models, selectedModel, onSelectModel, forecastHour }: M
         const config = parameterConfig[param];
         const Icon = config.icon ? iconMap[config.icon] : null;
         const rawValue = active[param]?.[hourIndex];
-        const displayValue = formatValue(rawValue as number | null | undefined, param, units);
-        const unitLabel = getUnitLabel(param, units, config.unit);
+        const isWindDir = param === "windDirection";
+        const displayValue = isWindDir
+          ? (rawValue == null ? "-" : degToCardinal(rawValue as number))
+          : formatValue(rawValue as number | null | undefined, param, units);
+        const unitLabel = isWindDir ? "" : getUnitLabel(param, units, config.unit);
         const translationKey = paramTranslationKey[param];
 
         return (
           <div key={param} className="glass-card rounded-xl p-3 text-center">
-            {Icon && <Icon className="w-4 h-4 text-primary mx-auto mb-1" />}
+            {Icon && (
+              isWindDir && rawValue != null ? (
+                <Icon
+                  className="w-4 h-4 text-accent-cyan mx-auto mb-1 transition-transform"
+                  style={{ transform: `rotate(${(rawValue as number) + 180}deg)` }}
+                />
+              ) : (
+                <Icon className="w-4 h-4 text-primary mx-auto mb-1" />
+              )
+            )}
             <div className="font-heading font-bold text-lg">{displayValue}</div>
-            <div className="text-[10px] text-muted-foreground font-body">{unitLabel}</div>
+            <div className="text-[10px] text-muted-foreground font-body">{unitLabel || (isWindDir && rawValue != null ? `${Math.round(rawValue as number)}°` : "")}</div>
             <div className="text-[10px] text-muted-foreground font-body mt-0.5">
               {translationKey ? t(translationKey) : config.label}
             </div>
