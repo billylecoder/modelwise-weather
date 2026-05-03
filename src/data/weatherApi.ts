@@ -403,6 +403,7 @@ async function fetchDirectFromOpenMeteo(lat: number, lon: number): Promise<Fetch
       "cloudCover",
       "snowfall",
       "snowDepth",
+      "windDirection",
     ];
     for (const r of results) {
       if (r.hours.length < maxLen) {
