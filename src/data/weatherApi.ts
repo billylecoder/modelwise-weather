@@ -17,6 +17,7 @@ export interface ModelForecast {
   cloudCover: number[];
   snowfall: number[];
   snowDepth: number[];
+  windDirection: number[];
 }
 
 export interface AirInfo {
@@ -55,7 +56,8 @@ export type WeatherParam = (
   "apparentTemperature" |
   "cloudCover" |
   "snowfall" |
-  "snowDepth"
+  "snowDepth" |
+  "windDirection"
 );
 
 export const parameterConfig: Record<WeatherParam, { label: string; unit: string; icon: string }> = {
@@ -74,6 +76,7 @@ export const parameterConfig: Record<WeatherParam, { label: string; unit: string
   temp500hPa: { label: "Temp 500hPa", unit: "°C", icon: "Thermometer" },
   snowfall: { label: "New Snow", unit: "cm", icon: "Snowflake" },
   snowDepth: { label: "Snow Depth", unit: "cm", icon: "Snowflake" },
+  windDirection: { label: "Wind Direction", unit: "°", icon: "Compass" },
 };
 
 // ---------------------------------------------------------------------------
@@ -179,6 +182,7 @@ const HOURLY_PARAMS = [
   "cloud_cover",
   "snowfall",
   "snow_depth",
+  "wind_direction_10m",
 ];
 
 const MAX_HOURS = 360;
