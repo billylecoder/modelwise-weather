@@ -146,6 +146,18 @@ const translations = {
     tapMapHint: "Πατήστε στον χάρτη ή σύρετε την καρφίτσα για επιλογή.",
     confirmLocation: "Χρήση αυτής της τοποθεσίας",
     changeLocation: "Αλλαγή τοποθεσίας",
+    play: "Αναπαραγωγή",
+    pause: "Παύση",
+    playbackSpeed: "Ταχύτητα αναπαραγωγής",
+    credits: "Πηγές",
+    creditsTitle: "Πηγές Δεδομένων",
+    creditsIntro: "Το WeatherIntel βασίζεται σε ελεύθερα δεδομένα. Σεβαστείτε την άδεια κάθε πηγής.",
+    creditWeather: "Προγνώσεις: Open-Meteo (CC BY 4.0) — ECMWF IFS, NOAA GFS, DWD ICON & ICON-EU.",
+    creditAir: "Ποιότητα αέρα & UV: Open-Meteo Air Quality, Copernicus CAMS Europe.",
+    creditGeo: "Γεωκωδικοποίηση: Open-Meteo και OpenStreetMap Nominatim (ODbL).",
+    creditMap: "Πλακίδια χάρτη: © OpenStreetMap contributors, CARTO (CC BY 3.0).",
+    creditIcons: "Εικονίδια: Lucide (άδεια ISC).",
+    creditDisclaimer: "Τα δεδομένα παρέχονται ως έχουν, χωρίς εγγύηση. Όχι για κρίσιμη χρήση ασφάλειας.",
   },
 } as const;
 
