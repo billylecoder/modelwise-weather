@@ -381,40 +381,45 @@ async function fetchDirectFromOpenMeteo(lat: number, lon: number): Promise<Fetch
   const all = await Promise.all(fetches);
   const valid = all.filter((r): r is ParseResult => r !== null && r.model.hours.length > 0);
   const results = valid.map((r) => r.model);
-  const startTime = valid[0]?.startTimeISO ?? new Date().toISOString();
 
-  // Use the longest model's hours as the unified timeline
-  if (results.length > 1) {
-    const maxLen = Math.max(...results.map((r) => r.hours.length));
-    const longestHours = results.find((r) => r.hours.length === maxLen)!.hours;
-    const fields: (keyof ModelForecast)[] = [
-      "temperature",
-      "precipitation",
-      "precipitationTotal",
-      "windSpeed",
-      "windGusts",
-      "pressure",
-      "humidity",
-      "dewPoint",
-      "cape",
-      "temp850hPa",
-      "temp500hPa",
-      "apparentTemperature",
-      "cloudCover",
-      "snowfall",
-      "snowDepth",
-      "windDirection",
-    ];
-    for (const r of results) {
-      if (r.hours.length < maxLen) {
-        // Pad shorter models with null
-        const padCount = maxLen - r.hours.length;
-        r.hours = longestHours;
-        for (const f of fields) {
-          (r as any)[f] = [...(r as any)[f], ...Array(padCount).fill(null)];
-        }
+  // Align all models onto a unified absolute-time grid.
+  // Use the EARLIEST model start as t=0; pad earlier hours / extend tail to cover all models.
+  const fields: (keyof ModelForecast)[] = [
+    "temperature", "precipitation", "precipitationTotal", "windSpeed", "windGusts",
+    "pressure", "humidity", "dewPoint", "cape", "temp850hPa", "temp500hPa",
+    "apparentTemperature", "cloudCover", "snowfall", "snowDepth", "windDirection",
+  ];
+  let startTime = new Date().toISOString();
+  if (valid.length > 0) {
+    const startMsList = valid.map((v) => new Date(v.startTimeISO).getTime());
+    const globalStartMs = Math.min(...startMsList);
+    startTime = new Date(globalStartMs).toISOString();
+    // Compute global max absolute hour
+    let maxAbsHour = 0;
+    valid.forEach((v) => {
+      const offset = Math.round((new Date(v.startTimeISO).getTime() - globalStartMs) / 3600000);
+      const last = v.model.hours[v.model.hours.length - 1] + offset;
+      if (last > maxAbsHour) maxAbsHour = last;
+    });
+    const unifiedHours: number[] = [];
+    for (let h = 0; h <= maxAbsHour; h++) unifiedHours.push(h);
+
+    valid.forEach((v) => {
+      const r = v.model;
+      const offset = Math.round((new Date(v.startTimeISO).getTime() - globalStartMs) / 3600000);
+      // Build hour→index map for this model
+      const idxMap = new Map<number, number>();
+      r.hours.forEach((h, i) => idxMap.set(h + offset, i));
+      const realign = (arr: (number | null)[]): (number | null)[] =>
+        unifiedHours.map((h) => {
+          const i = idxMap.get(h);
+          return i == null ? null : arr[i] ?? null;
+        });
+      for (const f of fields) {
+        (r as any)[f] = realign((r as any)[f]);
       }
-    }
+      r.hours = unifiedHours;
+    });
   }
 
   // Fetch air-quality once (UV/AQI from Open-Meteo, Saharan dust from Copernicus CAMS Europe).
