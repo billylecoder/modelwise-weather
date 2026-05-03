@@ -258,6 +258,7 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
   const rawCloud: (number | null)[] = [];
   const rawSnow: (number | null)[] = [];
   const rawSnowDepth: (number | null)[] = [];
+  const rawWindDir: (number | null)[] = [];
 
   for (let i = 0; i < hourly.time.length; i++) {
     const h = Math.round((new Date(hourly.time[i]).getTime() - startTime) / 3600000);
@@ -287,6 +288,10 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
       const sd = hourly.snow_depth?.[i];
       rawSnowDepth.push(sd == null ? null : Math.max(0, sd * 100));
     }
+    {
+      const wd = hourly.wind_direction_10m?.[i];
+      rawWindDir.push(wd == null ? null : ((wd % 360) + 360) % 360);
+    }
   }
 
   if (rawHours.length === 0) return null;
@@ -308,6 +313,7 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
       cloudCover: rawCloud,
       snowfall: rawSnow,
       snowDepth: rawSnowDepth,
+      windDirection: rawWindDir,
     },
     rawHours,
     "temperature"
@@ -346,6 +352,7 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
       cloudCover: arrays.cloudCover as number[],
       snowfall: snow as number[],
       snowDepth: arrays.snowDepth as number[],
+      windDirection: arrays.windDirection as number[],
     },
   };
 }
