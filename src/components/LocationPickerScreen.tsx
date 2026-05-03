@@ -181,9 +181,7 @@ export default function LocationPickerScreen({ onSelect }: Props) {
               zoom={pin ? 9 : 2}
               height={280}
               interactive
-              onPick={(lat, lon) =>
-                setPin({ lat, lon, name: `${lat.toFixed(4)}°, ${lon.toFixed(4)}°`, country: "" })
-              }
+              onPick={(lat, lon) => reverseGeocode(lat, lon)}
             />
           </div>
 
