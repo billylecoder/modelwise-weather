@@ -262,6 +262,8 @@ const Index = () => {
         ) : (
           <InfoTab airInfo={airInfo} dataStartTime={dataStartTime} forecastHour={forecastHour} />
         )}
+
+        <CreditsFooter />
       </div>
     </div>
   );
