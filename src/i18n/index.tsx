@@ -28,6 +28,7 @@ const translations = {
     cloudCover: "Cloud Cover",
     snowfall: "Snow",
     snowDepth: "Snow Depth",
+    windDirection: "Wind Direction",
     uvIndex: "UV Index",
     aqi: "Air Quality",
     dust: "Saharan Dust",
@@ -106,6 +107,7 @@ const translations = {
     cloudCover: "Νεφοκάλυψη",
     snowfall: "Χιόνι",
     snowDepth: "Πάχος Χιονιού",
+    windDirection: "Διεύθυνση Ανέμου",
     uvIndex: "Δείκτης UV",
     aqi: "Ποιότητα Αέρα",
     dust: "Σκόνη Σαχάρας",
@@ -211,5 +213,6 @@ export const paramTranslationKey: Record<string, TranslationKey> = {
   cloudCover: "cloudCover",
   snowfall: "snowfall",
   snowDepth: "snowDepth",
+  windDirection: "windDirection",
   dust: "dust",
 };

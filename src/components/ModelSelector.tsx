@@ -1,16 +1,16 @@
 import { useState } from "react";
 import { ModelForecast, parameterConfig, WeatherParam } from "@/data/weatherApi";
-import { Thermometer, CloudRain, Snowflake, Wind, Gauge, Droplets, Zap, Cloud, Sun, ChevronDown, ChevronUp } from "lucide-react";
+import { Thermometer, CloudRain, Snowflake, Wind, Gauge, Droplets, Zap, Cloud, Sun, Compass, ChevronDown, ChevronUp } from "lucide-react";
 import { useI18n, paramTranslationKey } from "@/i18n";
 import { useUnits } from "@/contexts/UnitsContext";
 import { formatValue, getUnitLabel } from "@/lib/units";
 
 const iconMap: Record<string, React.ComponentType<React.SVGProps<SVGSVGElement>>> = {
-  Thermometer, CloudRain, Wind, Gauge, Droplets, Zap, Cloud, Snowflake, Sun,
+  Thermometer, CloudRain, Wind, Gauge, Droplets, Zap, Cloud, Snowflake, Sun, Compass,
 };
 
 const BASIC_PARAMS: WeatherParam[] = [
-  "temperature", "apparentTemperature", "precipitation", "windSpeed", "humidity", "cloudCover", "snowfall",
+  "temperature", "apparentTemperature", "precipitation", "windSpeed", "humidity", "cloudCover", "snowfall", "windDirection",
 ];
 const ADVANCED_PARAMS: WeatherParam[] = [
   "precipitationTotal", "windGusts", "pressure", "dewPoint", "cape", "temp850hPa", "temp500hPa", "snowDepth",
