@@ -141,7 +141,7 @@ const Index = () => {
               <Cloud className="w-5 h-5 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="font-heading font-bold text-base leading-tight">{t("appName")}</h1>
+              <h1 className="font-heading font-bold text-base leading-tight text-gradient">{t("appName")}</h1>
               <p className="text-[10px] text-muted-foreground font-body">{t("appSubtitle")}</p>
             </div>
           </div>
