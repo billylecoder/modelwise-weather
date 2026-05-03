@@ -87,17 +87,28 @@ export default function LocationPickerScreen({ onSelect }: Props) {
     setQuery(name);
   };
 
+  const reverseGeocode = useCallback(async (lat: number, lon: number) => {
+    const fallback = { lat, lon, name: `${lat.toFixed(4)}°, ${lon.toFixed(4)}°`, country: "" };
+    setPin(fallback);
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&accept-language=en`
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      const a = data.address ?? {};
+      const place = a.city || a.town || a.village || a.hamlet || a.suburb || a.county || a.state || data.name;
+      const country = a.country;
+      const cc = (a.country_code ?? "").toUpperCase();
+      const name = [place, a.state && a.state !== place ? a.state : null, country].filter(Boolean).join(", ");
+      if (name) setPin({ lat, lon, name, country: cc });
+    } catch {}
+  }, []);
+
   const useGeolocation = () => {
     if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setPin({
-          lat: pos.coords.latitude,
-          lon: pos.coords.longitude,
-          name: `${pos.coords.latitude.toFixed(4)}°, ${pos.coords.longitude.toFixed(4)}°`,
-          country: "",
-        });
-      },
+      (pos) => reverseGeocode(pos.coords.latitude, pos.coords.longitude),
       () => setError(t("locationError"))
     );
   };
