@@ -1,27 +1,9 @@
 import { WeatherParam, parameterConfig } from "@/data/weatherApi";
 import { useI18n, paramTranslationKey } from "@/i18n";
-import {
-  Thermometer,
-  CloudRain,
-  Wind,
-  Gauge,
-  Droplets,
-  Zap,
-  Cloud,
-  Snowflake,
-  Sun,
-} from "lucide-react";
+import { Thermometer, CloudRain, Wind, Gauge, Droplets, Zap, Cloud, Snowflake, Sun, Compass } from "lucide-react";
 
 const iconMap: Record<string, React.ComponentType<React.SVGProps<SVGSVGElement>>> = {
-  Thermometer,
-  CloudRain,
-  Wind,
-  Gauge,
-  Droplets,
-  Zap,
-  Cloud,
-  Snowflake,
-  Sun,
+  Thermometer, CloudRain, Wind, Gauge, Droplets, Zap, Cloud, Snowflake, Sun, Compass,
 };
 
 interface ParameterSelectorProps {
