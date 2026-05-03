@@ -67,14 +67,20 @@ const HourlyForecast = ({ models, enabledModels, dataStartTime }: HourlyForecast
     return best;
   }, [base, models]);
 
+  // Use ECMWF as the source-of-truth for hourly forecasts (fallback: enabled models)
+  const sourceModels = useMemo(() => {
+    const ecmwf = models.find((m) => m.model === "ECMWF");
+    return ecmwf ? ["ECMWF"] : enabledModels;
+  }, [models, enabledModels]);
+
   const hours = useMemo(() => {
     const result = [];
     const total = models[0]?.hours.length ?? 0;
     for (let i = startIdx; i < Math.min(startIdx + 24, total); i++) {
-      result.push(summarizeHour(models, enabledModels, i));
+      result.push(summarizeHour(models, sourceModels, i));
     }
     return result;
-  }, [models, enabledModels, startIdx]);
+  }, [models, sourceModels, startIdx]);
 
   if (!base || hours.length === 0) return null;
 

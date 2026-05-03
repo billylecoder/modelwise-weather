@@ -50,6 +50,9 @@ const DailyForecast = ({ models, enabledModels, dataStartTime }: DailyForecastPr
 
   const days: DaySummary[] = useMemo(() => {
     if (!base || models.length === 0) return [];
+    // Use ECMWF as source-of-truth for daily forecasts when available
+    const ecmwf = models.find((m) => m.model === "ECMWF");
+    const sourceModels = ecmwf ? ["ECMWF"] : enabledModels;
     const hoursArr = models[0].hours;
     // Group hour indices by local calendar day
     const groups = new Map<string, number[]>();
@@ -67,7 +70,7 @@ const DailyForecast = ({ models, enabledModels, dataStartTime }: DailyForecastPr
       const gusts: number[] = [];
       const clouds: number[] = [];
       for (const i of idxs) {
-        const s = summarizeHour(models, enabledModels, i);
+        const s = summarizeHour(models, sourceModels, i);
         if (s.temp != null) temps.push(s.temp);
         if (s.precip != null) precip += s.precip;
         if (s.wind != null) winds.push(s.wind);

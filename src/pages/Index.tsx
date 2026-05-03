@@ -15,6 +15,7 @@ import LocationSearch from "@/components/LocationSearch";
 import LocationPickerScreen from "@/components/LocationPickerScreen";
 import SettingsPanel from "@/components/SettingsPanel";
 import InfoTab from "@/components/InfoTab";
+import CreditsFooter from "@/components/CreditsFooter";
 import { useI18n, paramTranslationKey } from "@/i18n";
 
 const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
@@ -261,6 +262,8 @@ const Index = () => {
         ) : (
           <InfoTab airInfo={airInfo} dataStartTime={dataStartTime} forecastHour={forecastHour} />
         )}
+
+        <CreditsFooter />
       </div>
     </div>
   );
