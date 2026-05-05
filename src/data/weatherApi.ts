@@ -18,6 +18,10 @@ export interface ModelForecast {
   snowfall: number[];
   snowDepth: number[];
   windDirection: number[];
+  thunderstorm: number[];   // 0–100 (probability/intensity from weather code)
+  hail: number[];           // 0–100
+  fog: (number | null)[];   // 0–100, null when visibility unavailable
+  hasFog: boolean;          // whether the model returned visibility data
 }
 
 export interface AirInfo {
@@ -57,7 +61,10 @@ export type WeatherParam = (
   "cloudCover" |
   "snowfall" |
   "snowDepth" |
-  "windDirection"
+  "windDirection" |
+  "thunderstorm" |
+  "hail" |
+  "fog"
 );
 
 export const parameterConfig: Record<WeatherParam, { label: string; unit: string; icon: string }> = {
@@ -77,6 +84,9 @@ export const parameterConfig: Record<WeatherParam, { label: string; unit: string
   snowfall: { label: "New Snow", unit: "cm", icon: "Snowflake" },
   snowDepth: { label: "Snow Depth", unit: "cm", icon: "Snowflake" },
   windDirection: { label: "Wind Direction", unit: "°", icon: "Compass" },
+  thunderstorm: { label: "Thunderstorm", unit: "%", icon: "Zap" },
+  hail: { label: "Hail", unit: "%", icon: "CloudHail" },
+  fog: { label: "Fog", unit: "%", icon: "CloudFog" },
 };
 
 // ---------------------------------------------------------------------------
