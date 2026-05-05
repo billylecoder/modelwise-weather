@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Cloud, Layers, RefreshCw, Loader2, AlertTriangle } from "lucide-react";
+import { Cloud, Layers, RefreshCw, Loader2, AlertTriangle, Home } from "lucide-react";
 import { WeatherParam, Location, ModelForecast, AirInfo } from "@/data/weatherApi";
 import { fetchWeatherData } from "@/data/weatherApi";
 import WeatherChart from "@/components/WeatherChart";
@@ -16,6 +16,7 @@ import LocationPickerScreen from "@/components/LocationPickerScreen";
 import SettingsPanel from "@/components/SettingsPanel";
 import InfoTab from "@/components/InfoTab";
 import WarningsBanner from "@/components/WarningsBanner";
+import WarningsTab from "@/components/WarningsTab";
 import CreditsFooter from "@/components/CreditsFooter";
 import { useI18n, paramTranslationKey } from "@/i18n";
 
@@ -47,7 +48,15 @@ const Index = () => {
   const [error, setError] = useState<string | null>(null);
   const [dataStartTime, setDataStartTime] = useState<string>("");
   const [airInfo, setAirInfo] = useState<AirInfo | undefined>(undefined);
-  const [activeTab, setActiveTab] = useState<"forecast" | "info">("forecast");
+  const [activeTab, setActiveTab] = useState<"forecast" | "warnings" | "info">("forecast");
+
+  const goHome = useCallback(() => {
+    try { localStorage.removeItem(STORAGE_KEY); } catch {}
+    setLocation(null);
+    setModels([]);
+    setEnabledModels([]);
+    setActiveTab("forecast");
+  }, []);
 
   const updateLocation = useCallback((loc: Location) => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(loc)); } catch {}
@@ -150,6 +159,14 @@ const Index = () => {
           <LocationSearch currentLocation={location} onSelectLocation={updateLocation} />
 
           <div className="flex items-center gap-4 text-xs text-muted-foreground font-body">
+            <button
+              onClick={goHome}
+              className="flex items-center gap-1.5 hover:text-foreground transition-colors"
+              title={t("home")}
+            >
+              <Home className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{t("home")}</span>
+            </button>
             <SettingsPanel />
             <LanguageToggle />
             <button
@@ -175,6 +192,7 @@ const Index = () => {
         <div className="flex gap-2 border-b border-border/40">
           {([
             { id: "forecast" as const, label: t("forecastTab") },
+            { id: "warnings" as const, label: t("warningsTab") },
             { id: "info" as const, label: t("infoTab") },
           ]).map((tab) => {
             const active = activeTab === tab.id;
@@ -197,7 +215,7 @@ const Index = () => {
         {/* Official warnings (always visible across tabs) */}
         <WarningsBanner lat={location.lat} lon={location.lon} country={location.country} locationName={location.name} />
 
-        {activeTab === "forecast" ? (
+        {activeTab === "forecast" && (
           <>
             {/* Top row */}
             <div className="grid grid-cols-2 gap-5">
@@ -263,7 +281,13 @@ const Index = () => {
               </div>
             </div>
           </>
-        ) : (
+        )}
+
+        {activeTab === "warnings" && (
+          <WarningsTab lat={location.lat} lon={location.lon} country={location.country} locationName={location.name} />
+        )}
+
+        {activeTab === "info" && (
           <InfoTab airInfo={airInfo} dataStartTime={dataStartTime} forecastHour={forecastHour} />
         )}
 
