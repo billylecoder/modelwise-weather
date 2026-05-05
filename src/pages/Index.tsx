@@ -192,6 +192,7 @@ const Index = () => {
         <div className="flex gap-2 border-b border-border/40">
           {([
             { id: "forecast" as const, label: t("forecastTab") },
+            { id: "warnings" as const, label: t("warningsTab") },
             { id: "info" as const, label: t("infoTab") },
           ]).map((tab) => {
             const active = activeTab === tab.id;
