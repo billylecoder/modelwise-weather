@@ -440,6 +440,7 @@ async function fetchDirectFromOpenMeteo(lat: number, lon: number): Promise<Fetch
     "temperature", "precipitation", "precipitationTotal", "windSpeed", "windGusts",
     "pressure", "humidity", "dewPoint", "cape", "temp850hPa", "temp500hPa",
     "apparentTemperature", "cloudCover", "snowfall", "snowDepth", "windDirection",
+    "thunderstorm", "hail", "fog",
   ];
   let startTime = new Date().toISOString();
   if (valid.length > 0) {
