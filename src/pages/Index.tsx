@@ -194,6 +194,9 @@ const Index = () => {
           })}
         </div>
 
+        {/* Official warnings (always visible across tabs) */}
+        <WarningsBanner lat={location.lat} lon={location.lon} country={location.country} locationName={location.name} />
+
         {activeTab === "forecast" ? (
           <>
             {/* Top row */}
