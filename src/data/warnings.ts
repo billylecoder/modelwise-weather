@@ -4,8 +4,8 @@ export type WarningSeverity = "minor" | "moderate" | "severe" | "extreme" | "unk
 export type WarningColor = "yellow" | "orange" | "red" | "purple" | "green";
 
 export interface Warning {
-  source: string;          // e.g. "NWS", "SPC", "MeteoAlarm"
-  event: string;           // e.g. "Tornado Warning", "Slight Risk"
+  source: string;          // e.g. "NWS", "EMY (HNMS) via MeteoAlarm"
+  event: string;
   headline?: string;
   description?: string;
   severity: WarningSeverity;
@@ -16,7 +16,7 @@ export interface Warning {
   url?: string;
 }
 
-// MeteoAlarm country-code → feed slug (most common EU countries).
+// MeteoAlarm country-code → feed slug
 const METEOALARM_FEEDS: Record<string, string> = {
   AT: "feeds-austria", BE: "feeds-belgium", BA: "feeds-bosnia-herzegovina",
   BG: "feeds-bulgaria", HR: "feeds-croatia", CY: "feeds-cyprus",
@@ -32,6 +32,64 @@ const METEOALARM_FEEDS: Record<string, string> = {
   ES: "feeds-spain", SE: "feeds-sweden", CH: "feeds-switzerland",
   UA: "feeds-ukraine", GB: "feeds-united-kingdom",
 };
+
+// Official national meteorological service for each country (issuer of warnings)
+export const OFFICIAL_WX_SERVICE: Record<string, { name: string; url: string }> = {
+  US: { name: "NWS / NOAA",                       url: "https://www.weather.gov/" },
+  GB: { name: "Met Office",                       url: "https://www.metoffice.gov.uk/weather/warnings-and-advice" },
+  IE: { name: "Met Éireann",                      url: "https://www.met.ie/warnings" },
+  FR: { name: "Météo-France",                     url: "https://vigilance.meteofrance.fr/" },
+  DE: { name: "DWD",                              url: "https://www.dwd.de/DE/wetter/warnungen/warnWetter_node.html" },
+  AT: { name: "ZAMG / GeoSphere Austria",         url: "https://warnungen.zamg.at/" },
+  CH: { name: "MeteoSwiss",                       url: "https://www.meteoswiss.admin.ch/weather/hazards.html" },
+  IT: { name: "Servizio Meteo AM / Protezione Civile", url: "https://www.meteoam.it/" },
+  ES: { name: "AEMET",                            url: "https://www.aemet.es/en/eltiempo/prediccion/avisos" },
+  PT: { name: "IPMA",                             url: "https://www.ipma.pt/en/otempo/prev-sam/" },
+  NL: { name: "KNMI",                             url: "https://www.knmi.nl/nederland-nu/weer/waarschuwingen" },
+  BE: { name: "RMI / KMI",                        url: "https://www.meteo.be/en/belgium" },
+  LU: { name: "MeteoLux",                         url: "https://www.meteolux.lu/" },
+  DK: { name: "DMI",                              url: "https://www.dmi.dk/vejr/" },
+  NO: { name: "MET Norway",                       url: "https://www.met.no/en" },
+  SE: { name: "SMHI",                             url: "https://www.smhi.se/en/weather/sweden-weather/warnings" },
+  FI: { name: "FMI",                              url: "https://en.ilmatieteenlaitos.fi/warnings" },
+  IS: { name: "Veðurstofa Íslands",               url: "https://en.vedur.is/weather/forecasts/alerts/" },
+  PL: { name: "IMGW",                             url: "https://meteo.imgw.pl/dyn/?osmet=true" },
+  CZ: { name: "ČHMÚ",                             url: "https://www.chmi.cz/" },
+  SK: { name: "SHMÚ",                             url: "https://www.shmu.sk/" },
+  HU: { name: "OMSZ",                             url: "https://www.met.hu/idojaras/veszelyjelzes/" },
+  RO: { name: "ANM",                              url: "https://www.meteoromania.ro/" },
+  BG: { name: "NIMH",                             url: "https://www.meteo.bg/" },
+  GR: { name: "EMY (HNMS)",                       url: "http://www.emy.gr/" },
+  CY: { name: "Cyprus Department of Meteorology", url: "https://www.moa.gov.cy/ms" },
+  HR: { name: "DHMZ",                             url: "https://meteo.hr/" },
+  SI: { name: "ARSO",                             url: "https://meteo.arso.gov.si/" },
+  RS: { name: "RHMSS",                            url: "https://www.hidmet.gov.rs/" },
+  BA: { name: "FHMZ BiH",                         url: "https://www.fhmzbih.gov.ba/" },
+  MK: { name: "UHMR",                             url: "https://uhmr.gov.mk/" },
+  ME: { name: "ZHMS",                             url: "https://www.meteo.co.me/" },
+  EE: { name: "Estonian Weather Service",         url: "https://www.ilmateenistus.ee/" },
+  LV: { name: "LVĢMC",                            url: "https://videscentrs.lvgmc.lv/" },
+  LT: { name: "LHMT",                             url: "https://www.meteo.lt/" },
+  MT: { name: "MaltaMetOffice",                   url: "https://www.maltairport.com/weather/" },
+  MD: { name: "SHS Moldova",                      url: "https://www.meteo.md/" },
+  UA: { name: "UkrHMC",                           url: "https://www.meteo.gov.ua/" },
+  IL: { name: "Israel Meteorological Service",    url: "https://ims.gov.il/en" },
+};
+
+// Public CORS proxies (chained as fallbacks). MeteoAlarm has no CORS headers.
+const PROXIES = [
+  (u: string) => `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(u)}`,
+  (u: string) => `https://r.jina.ai/${u}`,
+];
+async function fetchViaProxy(url: string): Promise<Response | null> {
+  for (const wrap of PROXIES) {
+    try {
+      const r = await fetch(wrap(url));
+      if (r.ok) return r;
+    } catch {}
+  }
+  return null;
+}
 
 const SEVERITY_TO_COLOR: Record<WarningSeverity, WarningColor> = {
   minor: "yellow", moderate: "orange", severe: "red", extreme: "purple", unknown: "yellow",
