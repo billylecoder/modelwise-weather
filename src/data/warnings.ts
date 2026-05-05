@@ -210,17 +210,31 @@ async function fetchSPC(lat: number, lon: number): Promise<Warning[]> {
 
 // --- MeteoAlarm (Europe) ---------------------------------------------------
 async function fetchMeteoAlarm(country: string, locationName?: string): Promise<Warning[]> {
-  const slug = METEOALARM_FEEDS[country.toUpperCase()];
+  const cc = country.toUpperCase();
+  const slug = METEOALARM_FEEDS[cc];
   if (!slug) return [];
+  const issuer = OFFICIAL_WX_SERVICE[cc];
+  const sourceLabel = issuer ? `${issuer.name} via MeteoAlarm` : "MeteoAlarm";
   try {
-    const res = await fetch(`https://feeds.meteoalarm.org/api/v1/warnings/${slug}`);
-    if (!res.ok) return [];
-    const data = await res.json();
+    const url = `https://feeds.meteoalarm.org/api/v1/warnings/${slug}`;
+    let res: Response | null = null;
+    try {
+      const r = await fetch(url);
+      if (r.ok) res = r;
+    } catch {}
+    if (!res) res = await fetchViaProxy(url);
+    if (!res) return [];
+
+    const text = await res.text();
+    const jsonStart = text.indexOf("{");
+    if (jsonStart < 0) return [];
+    let data: any;
+    try { data = JSON.parse(text.slice(jsonStart)); } catch { return []; }
+
     const out: Warning[] = [];
     const placeLower = (locationName ?? "").toLowerCase();
     for (const w of data?.warnings ?? []) {
       const infos = w?.alert?.info ?? [];
-      // prefer english locale
       const info = infos.find((i: any) => (i.language ?? "").toLowerCase().startsWith("en")) ?? infos[0];
       if (!info) continue;
       const params: any[] = info.parameter ?? [];
@@ -229,22 +243,20 @@ async function fetchMeteoAlarm(country: string, locationName?: string): Promise<
       const { sev, color } = meteoalarmLevelToSeverity(lvl);
       const areas = (info.area ?? []).map((a: any) => a.areaDesc).filter(Boolean);
       out.push({
-        source: "MeteoAlarm",
+        source: sourceLabel,
         event: info.event ?? "Weather Warning",
         headline: info.headline,
-        description: info.description,
+        description: info.description ?? info.instruction,
         severity: sev,
         color,
         effective: info.effective ?? info.onset,
         expires: info.expires,
         area: areas.join(", "),
-        url: info.web,
+        url: info.web ?? issuer?.url,
       });
-      // tag relevance for sorting
       (out[out.length - 1] as any)._relevant =
         placeLower && areas.some((a: string) => placeLower.includes(a.toLowerCase()) || a.toLowerCase().includes(placeLower.split(",")[0].trim()));
     }
-    // Relevant to selected place first, then by severity
     const sevOrder = { extreme: 4, severe: 3, moderate: 2, minor: 1, unknown: 0 } as const;
     out.sort((a, b) => {
       const ra = (a as any)._relevant ? 1 : 0;
