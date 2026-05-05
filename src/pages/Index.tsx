@@ -15,6 +15,7 @@ import LocationSearch from "@/components/LocationSearch";
 import LocationPickerScreen from "@/components/LocationPickerScreen";
 import SettingsPanel from "@/components/SettingsPanel";
 import InfoTab from "@/components/InfoTab";
+import WarningsBanner from "@/components/WarningsBanner";
 import CreditsFooter from "@/components/CreditsFooter";
 import { useI18n, paramTranslationKey } from "@/i18n";
 
@@ -192,6 +193,9 @@ const Index = () => {
             );
           })}
         </div>
+
+        {/* Official warnings (always visible across tabs) */}
+        <WarningsBanner lat={location.lat} lon={location.lon} country={location.country} locationName={location.name} />
 
         {activeTab === "forecast" ? (
           <>

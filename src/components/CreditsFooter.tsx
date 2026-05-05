@@ -62,6 +62,14 @@ const CreditsFooter = () => {
             </a>
           </li>
           <li>
+            {t("creditWarnings")}{" "}
+            <a href="https://www.weather.gov/documentation/services-web-api" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">NWS API</a>
+            {" · "}
+            <a href="https://www.spc.noaa.gov/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">NOAA SPC</a>
+            {" · "}
+            <a href="https://feeds.meteoalarm.org/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">MeteoAlarm (EUMETNET, CC BY 4.0)</a>
+          </li>
+          <li>
             {t("creditIcons")}{" "}
             <a
               href="https://lucide.dev/"

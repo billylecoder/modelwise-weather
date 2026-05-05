@@ -80,6 +80,7 @@ const translations = {
     creditGeo: "Geocoding & reverse geocoding: Open-Meteo Geocoding and OpenStreetMap Nominatim (ODbL).",
     creditMap: "Map tiles: © OpenStreetMap contributors, tiles by CARTO (CC BY 3.0).",
     creditIcons: "Icons: Lucide (ISC licence).",
+    creditWarnings: "Weather warnings: NOAA / NWS, NOAA SPC convective outlooks, EUMETNET MeteoAlarm.",
     creditDisclaimer: "Forecast data is provided as-is, with no warranty. Not for safety-critical use.",
   },
   el: {
@@ -159,6 +160,7 @@ const translations = {
     creditGeo: "Γεωκωδικοποίηση: Open-Meteo και OpenStreetMap Nominatim (ODbL).",
     creditMap: "Πλακίδια χάρτη: © OpenStreetMap contributors, CARTO (CC BY 3.0).",
     creditIcons: "Εικονίδια: Lucide (άδεια ISC).",
+    creditWarnings: "Προειδοποιήσεις καιρού: NOAA / NWS, προοπτικές SPC, EUMETNET MeteoAlarm.",
     creditDisclaimer: "Τα δεδομένα παρέχονται ως έχουν, χωρίς εγγύηση. Όχι για κρίσιμη χρήση ασφάλειας.",
   },
 } as const;
