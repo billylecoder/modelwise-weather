@@ -271,6 +271,8 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
   const rawSnow: (number | null)[] = [];
   const rawSnowDepth: (number | null)[] = [];
   const rawWindDir: (number | null)[] = [];
+  const rawCode: (number | null)[] = [];
+  const rawVis: (number | null)[] = [];
 
   for (let i = 0; i < hourly.time.length; i++) {
     const h = Math.round((new Date(hourly.time[i]).getTime() - startTime) / 3600000);
@@ -304,9 +306,40 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
       const wd = hourly.wind_direction_10m?.[i];
       rawWindDir.push(wd == null ? null : ((wd % 360) + 360) % 360);
     }
+    rawCode.push(hourly.weather_code?.[i] ?? null);
+    rawVis.push(hourly.visibility?.[i] ?? null);
   }
 
   if (rawHours.length === 0) return null;
+
+  // Derive thunderstorm/hail/fog from weather codes & visibility
+  // WMO weather codes: 95 thunderstorm, 96/99 thunderstorm with hail
+  const rawThunder: (number | null)[] = rawCode.map((c) => {
+    if (c == null) return null;
+    if (c === 95) return 80;
+    if (c === 96) return 90;
+    if (c === 99) return 100;
+    return 0;
+  });
+  const rawHail: (number | null)[] = rawCode.map((c) => {
+    if (c == null) return null;
+    if (c === 96) return 60;
+    if (c === 99) return 90;
+    return 0;
+  });
+  const hasVisData = rawVis.some((v) => v != null);
+  // Visibility (m): <200 dense fog 100, <500 90, <1000 70, <2000 40, <5000 15, else 0
+  const rawFog: (number | null)[] = hasVisData
+    ? rawVis.map((v) => {
+        if (v == null) return null;
+        if (v < 200) return 100;
+        if (v < 500) return 90;
+        if (v < 1000) return 70;
+        if (v < 2000) return 40;
+        if (v < 5000) return 15;
+        return 0;
+      })
+    : rawCode.map(() => null);
 
   // Trim trailing nulls based on temperature (primary signal)
   const { hours: trimmedHours, arrays } = trimTrailingNulls(
@@ -326,6 +359,9 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
       snowfall: rawSnow,
       snowDepth: rawSnowDepth,
       windDirection: rawWindDir,
+      thunderstorm: rawThunder,
+      hail: rawHail,
+      fog: rawFog,
     },
     rawHours,
     "temperature"
@@ -365,6 +401,10 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
       snowfall: snow as number[],
       snowDepth: arrays.snowDepth as number[],
       windDirection: arrays.windDirection as number[],
+      thunderstorm: arrays.thunderstorm as number[],
+      hail: arrays.hail as number[],
+      fog: arrays.fog as (number | null)[],
+      hasFog: hasVisData,
     },
   };
 }
