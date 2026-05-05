@@ -230,5 +230,8 @@ export const paramTranslationKey: Record<string, TranslationKey> = {
   snowfall: "snowfall",
   snowDepth: "snowDepth",
   windDirection: "windDirection",
+  thunderstorm: "thunderstorm",
+  hail: "hail",
+  fog: "fog",
   dust: "dust",
 };
