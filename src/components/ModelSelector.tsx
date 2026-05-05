@@ -10,7 +10,7 @@ const iconMap: Record<string, React.ComponentType<React.SVGProps<SVGSVGElement>>
   Thermometer, CloudRain, Wind, Gauge, Droplets, Zap, Cloud, Snowflake, Sun, Compass, CloudHail, CloudFog,
 };
 
-const BASIC_PARAMS: (typeof parameterConfig extends Record<infer K, unknown> ? K : never)[] = [
+const BASIC_PARAMS: WeatherParam[] = [
   "temperature", "apparentTemperature", "precipitation", "windSpeed", "humidity", "cloudCover", "snowfall", "windDirection",
 ];
 const STORM_PARAMS: WeatherParam[] = ["thunderstorm", "hail", "fog"];
