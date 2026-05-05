@@ -34,6 +34,17 @@ const COLOR_STYLES: Record<WarningColor, { bg: string; border: string; text: str
 
 const SEV_RANK: Record<string, number> = { extreme: 4, severe: 3, moderate: 2, minor: 1, unknown: 0 };
 
+function resolveColor(w: Warning): WarningColor {
+  if (w.source.toLowerCase().includes("spc")) return w.color;
+  switch (w.severity) {
+    case "extreme": return "red";
+    case "severe": return "orange";
+    case "moderate": return "yellow";
+    case "minor": return "green";
+    default: return w.color;
+  }
+}
+
 export default function WarningsBanner({ lat, lon, country, locationName }: Props) {
   const [warnings, setWarnings] = useState<Warning[]>([]);
   const [loading, setLoading] = useState(false);
@@ -45,7 +56,22 @@ export default function WarningsBanner({ lat, lon, country, locationName }: Prop
     fetchWarnings(lat, lon, country, locationName)
       .then((w) => {
         if (cancelled) return;
-        const sorted = [...w].sort((a, b) => (SEV_RANK[b.severity] ?? 0) - (SEV_RANK[a.severity] ?? 0));
+
+        const now = Date.now();
+
+        const filtered = w.filter((warn) => {
+          const notExpired = !warn.expires || new Date(warn.expires).getTime() > now;
+          const matchesRegion =
+            !warn.area ||
+            warn.area.toLowerCase().includes(locationName.toLowerCase()) ||
+            warn.area.toLowerCase().includes(country.toLowerCase());
+          return notExpired && matchesRegion;
+        });
+
+        const sorted = filtered.sort(
+          (a, b) => (SEV_RANK[b.severity] ?? 0) - (SEV_RANK[a.severity] ?? 0)
+        );
+
         setWarnings(sorted);
       })
       .catch(() => setWarnings([]))
@@ -56,7 +82,7 @@ export default function WarningsBanner({ lat, lon, country, locationName }: Prop
   if (loading || warnings.length === 0) return null;
 
   const top = warnings[0];
-  const topStyle = COLOR_STYLES[top.color];
+  const topStyle = COLOR_STYLES[resolveColor(top)];
 
   return (
     <div className={`rounded-xl border ${topStyle.border} ${topStyle.bg} backdrop-blur-sm overflow-hidden`}>
@@ -81,7 +107,7 @@ export default function WarningsBanner({ lat, lon, country, locationName }: Prop
 
       <div className="border-t border-border/20 divide-y divide-border/10">
         {warnings.map((w, i) => {
-          const s = COLOR_STYLES[w.color];
+          const s = COLOR_STYLES[resolveColor(w)];
           const isOpen = expanded === i;
           return (
             <div key={i} className={`${s.bg}`}>

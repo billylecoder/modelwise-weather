@@ -20,6 +20,17 @@ const COLOR_STYLES: Record<WarningColor, { bg: string; border: string; text: str
 
 const SEV_RANK: Record<string, number> = { extreme: 4, severe: 3, moderate: 2, minor: 1, unknown: 0 };
 
+function resolveColor(w: Warning): WarningColor {
+  if (w.source.toLowerCase().includes("spc")) return w.color;
+  switch (w.severity) {
+    case "extreme": return "red";
+    case "severe": return "orange";
+    case "moderate": return "yellow";
+    case "minor": return "green";
+    default: return w.color;
+  }
+}
+
 export default function WarningsTab({ lat, lon, country, locationName }: Props) {
   const { t } = useI18n();
   const [warnings, setWarnings] = useState<Warning[]>([]);
@@ -31,7 +42,21 @@ export default function WarningsTab({ lat, lon, country, locationName }: Props) 
     fetchWarnings(lat, lon, country, locationName)
       .then((w) => {
         if (cancelled) return;
-        setWarnings([...w].sort((a, b) => (SEV_RANK[b.severity] ?? 0) - (SEV_RANK[a.severity] ?? 0)));
+
+        const now = Date.now();
+
+        const filtered = w.filter((warn) => {
+          const notExpired = !warn.expires || new Date(warn.expires).getTime() > now;
+          const matchesRegion =
+            !warn.area ||
+            warn.area.toLowerCase().includes(locationName.toLowerCase()) ||
+            warn.area.toLowerCase().includes(country.toLowerCase());
+          return notExpired && matchesRegion;
+        });
+
+        setWarnings(
+          filtered.sort((a, b) => (SEV_RANK[b.severity] ?? 0) - (SEV_RANK[a.severity] ?? 0))
+        );
       })
       .catch(() => setWarnings([]))
       .finally(() => !cancelled && setLoading(false));
@@ -67,7 +92,7 @@ export default function WarningsTab({ lat, lon, country, locationName }: Props) 
 
       <div className="space-y-3">
         {warnings.map((w, i) => {
-          const s = COLOR_STYLES[w.color];
+          const s = COLOR_STYLES[resolveColor(w)];
           return (
             <div key={i} className={`rounded-xl border ${s.border} ${s.bg} ${s.text} p-4 space-y-2`}>
               <div className="flex items-center gap-2 flex-wrap">

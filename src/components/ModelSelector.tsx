@@ -126,7 +126,7 @@ const ModelSelector = ({ models, selectedModel, onSelectModel, forecastHour }: M
       {renderParams(BASIC_PARAMS)}
 
       {/* Storm / hazard parameters (omit fog if model lacks visibility) */}
-      {renderParams(STORM_PARAMS.filter((p) => p !== "fog" || active.hasFog))}
+      {renderParams(STORM_PARAMS)}
 
       {/* Advanced toggle */}
       <button
