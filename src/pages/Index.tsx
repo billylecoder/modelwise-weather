@@ -215,7 +215,7 @@ const Index = () => {
         {/* Official warnings (always visible across tabs) */}
         <WarningsBanner lat={location.lat} lon={location.lon} country={location.country} locationName={location.name} />
 
-        {activeTab === "forecast" ? (
+        {activeTab === "forecast" && (
           <>
             {/* Top row */}
             <div className="grid grid-cols-2 gap-5">
@@ -281,7 +281,13 @@ const Index = () => {
               </div>
             </div>
           </>
-        ) : (
+        )}
+
+        {activeTab === "warnings" && (
+          <WarningsTab lat={location.lat} lon={location.lon} country={location.country} locationName={location.name} />
+        )}
+
+        {activeTab === "info" && (
           <InfoTab airInfo={airInfo} dataStartTime={dataStartTime} forecastHour={forecastHour} />
         )}
 
