@@ -159,6 +159,14 @@ const Index = () => {
           <LocationSearch currentLocation={location} onSelectLocation={updateLocation} />
 
           <div className="flex items-center gap-4 text-xs text-muted-foreground font-body">
+            <button
+              onClick={goHome}
+              className="flex items-center gap-1.5 hover:text-foreground transition-colors"
+              title={t("home")}
+            >
+              <Home className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{t("home")}</span>
+            </button>
             <SettingsPanel />
             <LanguageToggle />
             <button
