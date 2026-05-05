@@ -160,6 +160,7 @@ const translations = {
     creditGeo: "Γεωκωδικοποίηση: Open-Meteo και OpenStreetMap Nominatim (ODbL).",
     creditMap: "Πλακίδια χάρτη: © OpenStreetMap contributors, CARTO (CC BY 3.0).",
     creditIcons: "Εικονίδια: Lucide (άδεια ISC).",
+    creditWarnings: "Προειδοποιήσεις καιρού: NOAA / NWS, προοπτικές SPC, EUMETNET MeteoAlarm.",
     creditDisclaimer: "Τα δεδομένα παρέχονται ως έχουν, χωρίς εγγύηση. Όχι για κρίσιμη χρήση ασφάλειας.",
   },
 } as const;
