@@ -193,6 +193,8 @@ const HOURLY_PARAMS = [
   "snowfall",
   "snow_depth",
   "wind_direction_10m",
+  "weather_code",
+  "visibility",
 ];
 
 const MAX_HOURS = 360;
