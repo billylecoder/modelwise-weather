@@ -80,6 +80,7 @@ const translations = {
     creditGeo: "Geocoding & reverse geocoding: Open-Meteo Geocoding and OpenStreetMap Nominatim (ODbL).",
     creditMap: "Map tiles: © OpenStreetMap contributors, tiles by CARTO (CC BY 3.0).",
     creditIcons: "Icons: Lucide (ISC licence).",
+    creditWarnings: "Weather warnings: NOAA / NWS, NOAA SPC convective outlooks, EUMETNET MeteoAlarm.",
     creditDisclaimer: "Forecast data is provided as-is, with no warranty. Not for safety-critical use.",
   },
   el: {
