@@ -18,17 +18,21 @@ const COLOR_STYLES: Record<WarningColor, { bg: string; border: string; text: str
   purple: { bg: "bg-fuchsia-500/15",  border: "border-fuchsia-500/50",  text: "text-fuchsia-100",  chip: "bg-fuchsia-500/60 text-fuchsia-50",  icon: "text-fuchsia-300" },
 };
 
-const SEV_RANK: Record<string, number> = { extreme: 4, severe: 3, moderate: 2, minor: 1, unknown: 0 };
+function getCorrectColor(w: Warning): WarningColor {
+  if (w.source?.toLowerCase().includes("spc")) {
+    const text = (w.event + " " + (w.headline ?? "")).toLowerCase();
 
-function resolveColor(w: Warning): WarningColor {
-  if (w.source.toLowerCase().includes("spc")) return w.color;
-  switch (w.severity) {
-    case "extreme": return "red";
-    case "severe": return "orange";
-    case "moderate": return "yellow";
-    case "minor": return "green";
-    default: return w.color;
+    if (text.includes("high")) return "purple";
+    if (text.includes("moderate")) return "red";
+    if (text.includes("enhanced")) return "orange";
+    if (text.includes("slight")) return "yellow";
+    if (text.includes("marginal")) return "green";
+    if (text.includes("general")) return "green";
+
+    return "green";
   }
+
+  return w.color;
 }
 
 export default function WarningsTab({ lat, lon, country, locationName }: Props) {
@@ -39,27 +43,23 @@ export default function WarningsTab({ lat, lon, country, locationName }: Props) 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+
     fetchWarnings(lat, lon, country, locationName)
       .then((w) => {
         if (cancelled) return;
 
         const now = Date.now();
 
-        const filtered = w.filter((warn) => {
-          const notExpired = !warn.expires || new Date(warn.expires).getTime() > now;
-          const matchesRegion =
-            !warn.area ||
-            warn.area.toLowerCase().includes(locationName.toLowerCase()) ||
-            warn.area.toLowerCase().includes(country.toLowerCase());
-          return notExpired && matchesRegion;
-        });
+        const filtered = w
+          .filter(w => !w.area || w.area.toLowerCase().includes(locationName.toLowerCase()))
+          .filter(w => !w.expires || new Date(w.expires).getTime() > now)
+          .map(w => ({ ...w, color: getCorrectColor(w) }));
 
-        setWarnings(
-          filtered.sort((a, b) => (SEV_RANK[b.severity] ?? 0) - (SEV_RANK[a.severity] ?? 0))
-        );
+        setWarnings(filtered);
       })
       .catch(() => setWarnings([]))
       .finally(() => !cancelled && setLoading(false));
+
     return () => { cancelled = true; };
   }, [lat, lon, country, locationName]);
 
@@ -70,7 +70,9 @@ export default function WarningsTab({ lat, lon, country, locationName }: Props) 
       <div className="glass-card rounded-xl p-5">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
-            <h2 className="font-heading font-semibold text-base">{t("warningsTab")} — {locationName}</h2>
+            <h2 className="font-heading font-semibold text-base">
+              {t("warningsTab")} — {locationName}
+            </h2>
             {issuer && (
               <p className="text-xs text-muted-foreground font-body mt-0.5">
                 {t("warningsSourceLabel")}:{" "}
@@ -92,21 +94,23 @@ export default function WarningsTab({ lat, lon, country, locationName }: Props) 
 
       <div className="space-y-3">
         {warnings.map((w, i) => {
-          const s = COLOR_STYLES[resolveColor(w)];
+          const s = COLOR_STYLES[w.color];
+
           return (
             <div key={i} className={`rounded-xl border ${s.border} ${s.bg} ${s.text} p-4 space-y-2`}>
               <div className="flex items-center gap-2 flex-wrap">
                 <AlertTriangle className={`w-4 h-4 ${s.icon}`} />
-                <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-heading font-bold ${s.chip}`}>
-                  {w.severity}
-                </span>
-                <span className="text-[10px] uppercase tracking-wider opacity-70 font-body">{w.source}</span>
+                <span className="text-[10px] opacity-70 font-body">{w.source}</span>
                 <span className="font-heading font-semibold text-sm">{w.event}</span>
               </div>
+
               {w.headline && <p className="font-heading font-semibold text-sm">{w.headline}</p>}
               {w.description && (
-                <p className="font-body text-xs whitespace-pre-line opacity-90 leading-relaxed">{w.description}</p>
+                <p className="font-body text-xs whitespace-pre-line opacity-90 leading-relaxed">
+                  {w.description}
+                </p>
               )}
+
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] font-body opacity-75 pt-1">
                 {w.area && <span>Area: {w.area}</span>}
                 {w.effective && <span>From: {new Date(w.effective).toLocaleString()}</span>}
