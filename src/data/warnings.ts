@@ -119,11 +119,14 @@ async function fetchNWS(lat: number, lon: number): Promise<Warning[]> {
     const p = f.properties ?? {};
     const sev = (p.severity ?? "unknown").toLowerCase() as WarningSeverity;
     const validSev: WarningSeverity = ["minor", "moderate", "severe", "extreme"].includes(sev) ? sev : "unknown";
+    const fullDesc: string | undefined = p.description;
+    const shortDesc = fullDesc ? fullDesc.split(/\n\s*\n/)[0].slice(0, 220) : undefined;
     return {
       source: "NWS",
       event: p.event ?? "Weather Alert",
       headline: p.headline,
-      description: p.description,
+      description: shortDesc,
+      descriptionFull: fullDesc,
       severity: validSev,
       color: SEVERITY_TO_COLOR[validSev],
       effective: p.effective,
