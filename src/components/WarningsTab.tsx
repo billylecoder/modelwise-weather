@@ -21,6 +21,7 @@ const COLOR_STYLES: Record<WarningColor, { bg: string; border: string; text: str
 export default function WarningsTab({ lat, lon, country, locationName }: Props) {
   const { t } = useI18n();
   const [warnings, setWarnings] = useState<Warning[]>([]);
+  const [expanded, setExpanded] = useState<Record<number, boolean>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
