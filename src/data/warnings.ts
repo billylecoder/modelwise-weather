@@ -176,6 +176,23 @@ const SPC_RISK_SEV: Record<string, WarningSeverity> = {
   TSTM: "minor", MRGL: "minor", SLGT: "moderate", ENH: "moderate", MDT: "severe", HIGH: "extreme",
 };
 
+const SPC_RISK_FULL: Record<string, string> = {
+  TSTM: "General Thunderstorms — Non-severe thunderstorms are possible. Lightning, brief gusty winds, and heavy downpours can still occur.",
+  MRGL: "Marginal Risk (Level 1/5) — Isolated severe thunderstorms possible. Limited in duration and/or coverage and/or intensity.",
+  SLGT: "Slight Risk (Level 2/5) — Scattered severe storms possible. Short-lived and/or not widespread, isolated intense storms possible.",
+  ENH:  "Enhanced Risk (Level 3/5) — Numerous severe storms possible. More persistent and/or widespread, a few intense.",
+  MDT:  "Moderate Risk (Level 4/5) — Widespread severe weather likely. Long-lived, widespread, and intense severe storms expected.",
+  HIGH: "High Risk (Level 5/5) — Widespread severe weather expected. Long-lived, widespread, and particularly intense severe storms (tornado outbreak or derecho) expected.",
+};
+const SPC_RISK_SHORT: Record<string, string> = {
+  TSTM: "Non-severe general thunderstorms possible.",
+  MRGL: "Isolated severe storms possible (Level 1/5).",
+  SLGT: "Scattered severe storms possible (Level 2/5).",
+  ENH:  "Numerous severe storms possible (Level 3/5).",
+  MDT:  "Widespread severe weather likely (Level 4/5).",
+  HIGH: "Widespread, intense severe weather expected (Level 5/5).",
+};
+
 async function fetchSPC(lat: number, lon: number): Promise<Warning[]> {
   const out: Warning[] = [];
   await Promise.all(
@@ -184,7 +201,6 @@ async function fetchSPC(lat: number, lon: number): Promise<Warning[]> {
         const res = await fetch(url);
         if (!res.ok) return;
         const data = await res.json();
-        // Choose the highest-risk feature containing the point
         let best: { label: string; props: any } | null = null;
         const order = ["TSTM", "MRGL", "SLGT", "ENH", "MDT", "HIGH"];
         for (const f of data.features ?? []) {
@@ -199,16 +215,21 @@ async function fetchSPC(lat: number, lon: number): Promise<Warning[]> {
           out.push({
             source: `SPC Day ${day}`,
             event: `Severe Weather Outlook — Day ${day}`,
+            headline: SPC_RISK_SHORT[best.label],
+            description: SPC_RISK_SHORT[best.label],
+            descriptionFull: SPC_RISK_FULL[best.label],
             severity: SPC_RISK_SEV[best.label] ?? "unknown",
             color: SPC_RISK_COLOR[best.label] ?? "yellow",
             effective: best.props.VALID_ISO,
             expires: best.props.EXPIRE_ISO,
             url: `https://www.spc.noaa.gov/products/outlook/day${day}otlk.html`,
+            sortKey: day,
           });
         }
       } catch {}
     })
   );
+  out.sort((a, b) => (a.sortKey ?? 99) - (b.sortKey ?? 99));
   return out;
 }
 
