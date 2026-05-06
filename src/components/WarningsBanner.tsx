@@ -43,12 +43,9 @@ export default function WarningsBanner({ lat, lon, country, locationName }: Prop
     <div className={`rounded-xl border ${topStyle.border} ${topStyle.bg} backdrop-blur-sm overflow-hidden`}>
       <div className={`px-4 py-3 flex items-center gap-3 ${topStyle.text}`}>
         <AlertTriangle className={`w-5 h-5 shrink-0 ${topStyle.icon}`} />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[10px] uppercase tracking-wider opacity-70 font-body">{top.source}</span>
-            <span className="font-heading font-semibold text-sm truncate">{top.event}</span>
-          </div>
-          {top.headline && <p className="text-xs opacity-90 mt-0.5 font-body line-clamp-1">{top.headline}</p>}
+        <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
+          <span className="text-[10px] uppercase tracking-wider opacity-70 font-body">{top.source}</span>
+          <span className="font-heading font-semibold text-sm truncate">{top.event}</span>
         </div>
       </div>
 
@@ -68,10 +65,9 @@ export default function WarningsBanner({ lat, lon, country, locationName }: Prop
                 {isOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
               </button>
 
-              {isOpen && (
-                <div className={`px-4 pb-3 pt-1 text-xs space-y-2 ${s.text}`}>
-                  {w.headline && <p className="font-heading font-semibold">{w.headline}</p>}
-                  {w.description && <p className="font-body whitespace-pre-line opacity-90">{w.description}</p>}
+              {isOpen && w.description && (
+                <div className={`px-4 pb-3 pt-1 text-xs ${s.text}`}>
+                  <p className="font-body opacity-90">{w.description}</p>
                 </div>
               )}
             </div>
