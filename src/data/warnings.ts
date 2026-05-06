@@ -193,12 +193,11 @@ async function fetchSPC(lat: number, lon: number): Promise<Warning[]> {
         if (best) {
           out.push({
             source: `SPC Day ${day}`,
-            event: best.props.LABEL2 ?? best.label,
+            event: `Severe Weather Outlook — Day ${day}`,
             severity: SPC_RISK_SEV[best.label] ?? "unknown",
             color: SPC_RISK_COLOR[best.label] ?? "yellow",
             effective: best.props.VALID_ISO,
             expires: best.props.EXPIRE_ISO,
-            description: `Convective outlook category: ${best.props.LABEL2 ?? best.label}.`,
             url: `https://www.spc.noaa.gov/products/outlook/day${day}otlk.html`,
           });
         }
@@ -232,16 +231,38 @@ async function fetchMeteoAlarm(country: string, locationName?: string): Promise<
     try { data = JSON.parse(text.slice(jsonStart)); } catch { return []; }
 
     const out: Warning[] = [];
-    const placeLower = (locationName ?? "").toLowerCase();
+    const now = Date.now();
+    const tokens = (locationName ?? "")
+      .toLowerCase()
+      .split(/[,/]/)
+      .map(s => s.trim())
+      .filter(s => s.length >= 3);
+
     for (const w of data?.warnings ?? []) {
       const infos = w?.alert?.info ?? [];
       const info = infos.find((i: any) => (i.language ?? "").toLowerCase().startsWith("en")) ?? infos[0];
       if (!info) continue;
+
+      const effectiveMs = info.effective || info.onset ? new Date(info.effective ?? info.onset).getTime() : NaN;
+      const expiresMs = info.expires ? new Date(info.expires).getTime() : NaN;
+      if (!Number.isNaN(expiresMs) && expiresMs < now) continue;
+      if (!Number.isNaN(effectiveMs) && effectiveMs > now + 7 * 24 * 3600 * 1000) continue;
+
+      const areas: string[] = (info.area ?? []).map((a: any) => a.areaDesc).filter(Boolean);
+      // Strict area filter — only include warnings for the user's specific area
+      if (tokens.length && areas.length) {
+        const matches = areas.some((a) => {
+          const al = a.toLowerCase();
+          return tokens.some(t => al.includes(t) || t.includes(al));
+        });
+        if (!matches) continue;
+      }
+
       const params: any[] = info.parameter ?? [];
       const lvl = params.find((p) => (p.valueName ?? "").toLowerCase().includes("awareness_level"))?.value
         ?? params.find((p) => (p.valueName ?? "").toLowerCase() === "awareness_level")?.value;
       const { sev, color } = meteoalarmLevelToSeverity(lvl);
-      const areas = (info.area ?? []).map((a: any) => a.areaDesc).filter(Boolean);
+
       out.push({
         source: sourceLabel,
         event: info.event ?? "Weather Warning",
@@ -254,16 +275,9 @@ async function fetchMeteoAlarm(country: string, locationName?: string): Promise<
         area: areas.join(", "),
         url: info.web ?? issuer?.url,
       });
-      (out[out.length - 1] as any)._relevant =
-        placeLower && areas.some((a: string) => placeLower.includes(a.toLowerCase()) || a.toLowerCase().includes(placeLower.split(",")[0].trim()));
     }
-    const sevOrder = { extreme: 4, severe: 3, moderate: 2, minor: 1, unknown: 0 } as const;
-    out.sort((a, b) => {
-      const ra = (a as any)._relevant ? 1 : 0;
-      const rb = (b as any)._relevant ? 1 : 0;
-      if (ra !== rb) return rb - ra;
-      return sevOrder[b.severity] - sevOrder[a.severity];
-    });
+    const colorOrder = { purple: 4, red: 3, orange: 2, yellow: 1, green: 0 } as const;
+    out.sort((a, b) => (colorOrder[b.color] ?? 0) - (colorOrder[a.color] ?? 0));
     return out;
   } catch {
     return [];

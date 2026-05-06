@@ -9,45 +9,13 @@ interface Props {
   locationName: string;
 }
 
-const COLOR_STYLES: Record<WarningColor, { bg: string; border: string; text: string; chip: string; icon: string }> = {
-  green: {
-    bg: "bg-emerald-500/10", border: "border-emerald-500/30",
-    text: "text-emerald-100", chip: "bg-emerald-500/30 text-emerald-50", icon: "text-emerald-300",
-  },
-  yellow: {
-    bg: "bg-yellow-500/10", border: "border-yellow-500/40",
-    text: "text-yellow-100", chip: "bg-yellow-500/40 text-yellow-50", icon: "text-yellow-300",
-  },
-  orange: {
-    bg: "bg-orange-500/15", border: "border-orange-500/40",
-    text: "text-orange-100", chip: "bg-orange-500/50 text-orange-50", icon: "text-orange-300",
-  },
-  red: {
-    bg: "bg-red-500/15", border: "border-red-500/50",
-    text: "text-red-100", chip: "bg-red-500/60 text-red-50", icon: "text-red-300",
-  },
-  purple: {
-    bg: "bg-fuchsia-500/15", border: "border-fuchsia-500/50",
-    text: "text-fuchsia-100", chip: "bg-fuchsia-500/60 text-fuchsia-50", icon: "text-fuchsia-300",
-  },
+const COLOR_STYLES: Record<WarningColor, { bg: string; border: string; text: string; icon: string }> = {
+  green:  { bg: "bg-emerald-500/10",  border: "border-emerald-500/30",  text: "text-emerald-100",  icon: "text-emerald-300" },
+  yellow: { bg: "bg-yellow-500/10",   border: "border-yellow-500/40",   text: "text-yellow-100",   icon: "text-yellow-300" },
+  orange: { bg: "bg-orange-500/15",   border: "border-orange-500/40",   text: "text-orange-100",   icon: "text-orange-300" },
+  red:    { bg: "bg-red-500/15",      border: "border-red-500/50",      text: "text-red-100",      icon: "text-red-300" },
+  purple: { bg: "bg-fuchsia-500/15",  border: "border-fuchsia-500/50",  text: "text-fuchsia-100",  icon: "text-fuchsia-300" },
 };
-
-function getCorrectColor(w: Warning): WarningColor {
-  if (w.source?.toLowerCase().includes("spc")) {
-    const text = (w.event + " " + (w.headline ?? "")).toLowerCase();
-
-    if (text.includes("high")) return "purple";
-    if (text.includes("moderate")) return "red";
-    if (text.includes("enhanced")) return "orange";
-    if (text.includes("slight")) return "yellow";
-    if (text.includes("marginal")) return "green";
-    if (text.includes("general")) return "green";
-
-    return "green";
-  }
-
-  return w.color;
-}
 
 export default function WarningsBanner({ lat, lon, country, locationName }: Props) {
   const [warnings, setWarnings] = useState<Warning[]>([]);
@@ -59,18 +27,7 @@ export default function WarningsBanner({ lat, lon, country, locationName }: Prop
     setLoading(true);
 
     fetchWarnings(lat, lon, country, locationName)
-      .then((w) => {
-        if (cancelled) return;
-
-        const now = Date.now();
-
-        const filtered = w
-          .filter(w => !w.area || w.area.toLowerCase().includes(locationName.toLowerCase()))
-          .filter(w => !w.expires || new Date(w.expires).getTime() > now)
-          .map(w => ({ ...w, color: getCorrectColor(w) }));
-
-        setWarnings(filtered);
-      })
+      .then((w) => { if (!cancelled) setWarnings(w); })
       .catch(() => setWarnings([]))
       .finally(() => !cancelled && setLoading(false));
 
