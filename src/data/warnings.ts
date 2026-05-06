@@ -193,12 +193,11 @@ async function fetchSPC(lat: number, lon: number): Promise<Warning[]> {
         if (best) {
           out.push({
             source: `SPC Day ${day}`,
-            event: best.props.LABEL2 ?? best.label,
+            event: `Severe Weather Outlook — Day ${day}`,
             severity: SPC_RISK_SEV[best.label] ?? "unknown",
             color: SPC_RISK_COLOR[best.label] ?? "yellow",
             effective: best.props.VALID_ISO,
             expires: best.props.EXPIRE_ISO,
-            description: `Convective outlook category: ${best.props.LABEL2 ?? best.label}.`,
             url: `https://www.spc.noaa.gov/products/outlook/day${day}otlk.html`,
           });
         }
