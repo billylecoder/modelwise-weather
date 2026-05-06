@@ -7,13 +7,15 @@ export interface Warning {
   source: string;          // e.g. "NWS", "EMY (HNMS) via MeteoAlarm"
   event: string;
   headline?: string;
-  description?: string;
+  description?: string;       // short (1–2 line) summary
+  descriptionFull?: string;   // full official text
   severity: WarningSeverity;
   color: WarningColor;
   effective?: string;
   expires?: string;
   area?: string;
   url?: string;
+  sortKey?: number;           // lower comes first within same color
 }
 
 // MeteoAlarm country-code → feed slug
