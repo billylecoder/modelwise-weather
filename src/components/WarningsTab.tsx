@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AlertTriangle, ExternalLink, Loader2 } from "lucide-react";
+import { AlertTriangle, ExternalLink, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { fetchWarnings, OFFICIAL_WX_SERVICE, type Warning, type WarningColor } from "@/data/warnings";
 import { useI18n } from "@/i18n";
 
