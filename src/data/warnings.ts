@@ -289,11 +289,15 @@ async function fetchMeteoAlarm(country: string, locationName?: string): Promise<
         ?? params.find((p) => (p.valueName ?? "").toLowerCase() === "awareness_level")?.value;
       const { sev, color } = meteoalarmLevelToSeverity(lvl);
 
+      const fullDesc: string | undefined = info.description ?? info.instruction;
+      const shortDesc = fullDesc ? fullDesc.split(/\n\s*\n|\. /)[0].slice(0, 220) : info.headline;
+
       out.push({
         source: sourceLabel,
         event: info.event ?? "Weather Warning",
         headline: info.headline,
-        description: info.description ?? info.instruction,
+        description: shortDesc,
+        descriptionFull: fullDesc,
         severity: sev,
         color,
         effective: info.effective ?? info.onset,
