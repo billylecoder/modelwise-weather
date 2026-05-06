@@ -83,6 +83,21 @@ export default function WarningsTab({ lat, lon, country, locationName }: Props) 
                   {w.description}
                 </p>
               )}
+              {w.descriptionFull && w.descriptionFull !== w.description && (
+                <>
+                  <button
+                    onClick={() => setExpanded((e) => ({ ...e, [i]: !e[i] }))}
+                    className={`inline-flex items-center gap-1 text-[11px] font-body underline opacity-80 hover:opacity-100 ${s.text}`}
+                  >
+                    {expanded[i] ? <>Show less <ChevronUp className="w-3 h-3" /></> : <>Show full warning <ChevronDown className="w-3 h-3" /></>}
+                  </button>
+                  {expanded[i] && (
+                    <p className="font-body text-xs whitespace-pre-line opacity-90 leading-relaxed pt-1 border-t border-border/20 mt-2">
+                      {w.descriptionFull}
+                    </p>
+                  )}
+                </>
+              )}
 
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] font-body opacity-75 pt-1">
                 {w.area && <span>Area: {w.area}</span>}
