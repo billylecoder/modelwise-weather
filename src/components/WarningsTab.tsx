@@ -29,7 +29,7 @@ export default function WarningsTab({ lat, lon, country, locationName }: Props) 
     setLoading(true);
 
     fetchWarnings(lat, lon, country, locationName)
-      .then((w) => { if (!cancelled) setWarnings(w); })
+      .then((w) => { if (!cancelled) setWarnings(w.filter((x) => x.color !== "green")); })
       .catch(() => setWarnings([]))
       .finally(() => !cancelled && setLoading(false));
 
