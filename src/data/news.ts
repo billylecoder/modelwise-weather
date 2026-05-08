@@ -1,5 +1,5 @@
 // Weather news feed via Google News RSS (CORS-proxied).
-import { fetchViaProxy } from "./warnings";
+
 
 export interface NewsItem {
   title: string;
@@ -36,18 +36,42 @@ export async function fetchWeatherNews(country?: string, lang: string = "en"): P
   const gl = (country ?? "US").toUpperCase();
   const ceid = `${gl}:${hl.split("-")[0]}`;
   const query = encodeURIComponent("weather OR storm OR forecast OR hurricane OR flood");
-  const url = `https://news.google.com/rss/search?q=${query}&hl=${hl}&gl=${gl}&ceid=${ceid}`;
+  const feedUrl = `https://news.google.com/rss/search?q=${query}&hl=${hl}&gl=${gl}&ceid=${ceid}`;
 
-  let res: Response | null = null;
-  try {
-    const r = await fetch(url);
-    if (r.ok) res = r;
-  } catch {}
-  if (!res) res = await fetchViaProxy(url);
-  if (!res) return [];
+  // Try several CORS proxies (Google News blocks direct browser fetches).
+  const attempts: Array<() => Promise<string | null>> = [
+    async () => {
+      const r = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(feedUrl)}`);
+      if (!r.ok) return null;
+      const j = await r.json().catch(() => null);
+      return j?.contents ?? null;
+    },
+    async () => {
+      const r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(feedUrl)}`);
+      if (!r.ok) return null;
+      return await r.text();
+    },
+    async () => {
+      const r = await fetch(`https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(feedUrl)}`);
+      if (!r.ok) return null;
+      const t = await r.text();
+      return t && t.length > 0 ? t : null;
+    },
+    async () => {
+      const r = await fetch(`https://r.jina.ai/${feedUrl}`);
+      if (!r.ok) return null;
+      return await r.text();
+    },
+  ];
 
   let text = "";
-  try { text = await res.text(); } catch { return []; }
+  for (const attempt of attempts) {
+    try {
+      const got = await attempt();
+      if (got && got.includes("<item")) { text = got; break; }
+    } catch {}
+  }
+  if (!text) return [];
 
   // r.jina.ai returns markdown sometimes — fallback to detect <item>
   const items: NewsItem[] = [];
