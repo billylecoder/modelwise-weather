@@ -194,6 +194,7 @@ const Index = () => {
           {([
             { id: "forecast" as const, label: t("forecastTab") },
             { id: "warnings" as const, label: t("warningsTab") },
+            { id: "news" as const, label: t("newsTab") },
             { id: "info" as const, label: t("infoTab") },
           ]).map((tab) => {
             const active = activeTab === tab.id;
