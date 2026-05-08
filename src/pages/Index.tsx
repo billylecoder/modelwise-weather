@@ -18,6 +18,7 @@ import InfoTab from "@/components/InfoTab";
 import WarningsBanner from "@/components/WarningsBanner";
 import WarningsTab from "@/components/WarningsTab";
 import CreditsFooter from "@/components/CreditsFooter";
+import NewsFeed from "@/components/NewsFeed";
 import { useI18n, paramTranslationKey } from "@/i18n";
 
 const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
