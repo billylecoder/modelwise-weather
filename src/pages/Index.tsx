@@ -49,7 +49,7 @@ const Index = () => {
   const [error, setError] = useState<string | null>(null);
   const [dataStartTime, setDataStartTime] = useState<string>("");
   const [airInfo, setAirInfo] = useState<AirInfo | undefined>(undefined);
-  const [activeTab, setActiveTab] = useState<"forecast" | "warnings" | "info">("forecast");
+  const [activeTab, setActiveTab] = useState<"forecast" | "warnings" | "news" | "info">("forecast");
 
   const goHome = useCallback(() => {
     try { localStorage.removeItem(STORAGE_KEY); } catch {}
