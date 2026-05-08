@@ -83,7 +83,7 @@ const PROXIES = [
   (u: string) => `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(u)}`,
   (u: string) => `https://r.jina.ai/${u}`,
 ];
-async function fetchViaProxy(url: string): Promise<Response | null> {
+export async function fetchViaProxy(url: string): Promise<Response | null> {
   for (const wrap of PROXIES) {
     try {
       const r = await fetch(wrap(url));
@@ -314,11 +314,115 @@ async function fetchMeteoAlarm(country: string, locationName?: string): Promise<
   }
 }
 
+// --- GDACS (Global) --------------------------------------------------------
+// GDACS provides global hazard alerts (TC, FL, EQ, VO, DR, WF) with Green/Orange/Red levels.
+// Used as a fallback for countries without MeteoAlarm/NWS coverage and as a supplement worldwide.
+const GDACS_LEVEL: Record<string, { sev: WarningSeverity; color: WarningColor }> = {
+  Green:  { sev: "minor",   color: "green"  },
+  Orange: { sev: "severe",  color: "orange" },
+  Red:    { sev: "extreme", color: "red"    },
+};
+const GDACS_EVENT_NAMES: Record<string, string> = {
+  TC: "Tropical Cyclone", FL: "Flood", EQ: "Earthquake", VO: "Volcano",
+  DR: "Drought", WF: "Wildfire",
+};
+
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+async function fetchGDACS(lat: number, lon: number, country: string): Promise<Warning[]> {
+  const url = "https://www.gdacs.org/gdacsapi/api/events/geteventlist/SEARCH?eventlist=TC,FL,EQ,VO,DR,WF&alertlevel=Orange;Red";
+  let res: Response | null = null;
+  try {
+    const r = await fetch(url);
+    if (r.ok) res = r;
+  } catch {}
+  if (!res) res = await fetchViaProxy(url);
+  if (!res) return [];
+
+  let data: any;
+  try { data = await res.json(); } catch {
+    try { data = JSON.parse(await res.text()); } catch { return []; }
+  }
+
+  const out: Warning[] = [];
+  const cc = (country ?? "").toUpperCase();
+  const now = Date.now();
+
+  for (const f of data?.features ?? []) {
+    const p = f.properties ?? {};
+    const level = p.alertlevel ?? p.alertLevel;
+    const map = GDACS_LEVEL[level];
+    if (!map) continue;
+
+    const toMs = p.todate ? new Date(p.todate).getTime() : NaN;
+    if (!Number.isNaN(toMs) && toMs < now - 24 * 3600 * 1000) continue;
+
+    const eventCountry = (p.iso3 ?? p.country ?? "").toString().toUpperCase();
+    const coords = f.geometry?.coordinates ?? [];
+    const evLon = Number(coords[0]);
+    const evLat = Number(coords[1]);
+    const distKm = (Number.isFinite(evLat) && Number.isFinite(evLon))
+      ? haversineKm(lat, lon, evLat, evLon)
+      : Infinity;
+
+    // Country code match (ISO3 vs ISO2 — match by prefix), or within 800km.
+    const ccMatch = eventCountry && cc && (eventCountry.startsWith(cc) || cc.startsWith(eventCountry.slice(0, 2)));
+    if (!ccMatch && distKm > 800) continue;
+
+    const evType = p.eventtype ?? "";
+    const typeName = GDACS_EVENT_NAMES[evType] ?? "Hazard";
+    const headline = p.htmldescription ? String(p.htmldescription).replace(/<[^>]+>/g, "").trim() : (p.name ?? p.eventname);
+    const desc = p.description ?? headline;
+
+    out.push({
+      source: "GDACS",
+      event: `${typeName}${p.name ? " — " + p.name : ""}`,
+      headline,
+      description: desc ? String(desc).slice(0, 220) : undefined,
+      descriptionFull: desc ? String(desc) : undefined,
+      severity: map.sev,
+      color: map.color,
+      effective: p.fromdate,
+      expires: p.todate,
+      area: p.country,
+      url: p.url?.report ?? p.url ?? "https://www.gdacs.org/",
+    });
+  }
+
+  // Color priority order
+  const order = { purple: 4, red: 3, orange: 2, yellow: 1, green: 0 } as const;
+  out.sort((a, b) => (order[b.color] ?? 0) - (order[a.color] ?? 0));
+  return out;
+}
+
 export async function fetchWarnings(lat: number, lon: number, country: string, locationName?: string): Promise<Warning[]> {
   const cc = (country ?? "").toUpperCase();
-  if (cc === "US") {
-    const [nws, spc] = await Promise.all([fetchNWS(lat, lon), fetchSPC(lat, lon)]);
-    return [...nws, ...spc];
-  }
-  return fetchMeteoAlarm(cc, locationName);
+  const isUS = cc === "US";
+  const isEU = !!METEOALARM_FEEDS[cc];
+
+  const [primary, gdacs] = await Promise.all([
+    isUS
+      ? Promise.all([fetchNWS(lat, lon), fetchSPC(lat, lon)]).then(([a, b]) => [...a, ...b])
+      : isEU
+        ? fetchMeteoAlarm(cc, locationName)
+        : Promise.resolve([] as Warning[]),
+    fetchGDACS(lat, lon, country),
+  ]);
+
+  // De-dupe by event+source
+  const seen = new Set<string>();
+  return [...primary, ...gdacs].filter((w) => {
+    const k = `${w.source}|${w.event}|${w.effective ?? ""}`;
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
 }
+

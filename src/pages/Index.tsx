@@ -18,6 +18,7 @@ import InfoTab from "@/components/InfoTab";
 import WarningsBanner from "@/components/WarningsBanner";
 import WarningsTab from "@/components/WarningsTab";
 import CreditsFooter from "@/components/CreditsFooter";
+import NewsFeed from "@/components/NewsFeed";
 import { useI18n, paramTranslationKey } from "@/i18n";
 
 const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
@@ -48,7 +49,7 @@ const Index = () => {
   const [error, setError] = useState<string | null>(null);
   const [dataStartTime, setDataStartTime] = useState<string>("");
   const [airInfo, setAirInfo] = useState<AirInfo | undefined>(undefined);
-  const [activeTab, setActiveTab] = useState<"forecast" | "warnings" | "info">("forecast");
+  const [activeTab, setActiveTab] = useState<"forecast" | "warnings" | "news" | "info">("forecast");
 
   const goHome = useCallback(() => {
     try { localStorage.removeItem(STORAGE_KEY); } catch {}
@@ -193,6 +194,7 @@ const Index = () => {
           {([
             { id: "forecast" as const, label: t("forecastTab") },
             { id: "warnings" as const, label: t("warningsTab") },
+            { id: "news" as const, label: t("newsTab") },
             { id: "info" as const, label: t("infoTab") },
           ]).map((tab) => {
             const active = activeTab === tab.id;
@@ -218,75 +220,89 @@ const Index = () => {
         )}
 
         {activeTab === "forecast" && (
-          <>
-            {/* Top row */}
-            <div className="grid grid-cols-2 gap-5">
-              <ForecastTimeline
-                value={timelineIndex}
-                max={(models[0]?.hours.length ?? 1) - 1}
-                onChange={setTimelineIndex}
-                hours={models[0]?.hours ?? [0]}
-                dataStartTime={dataStartTime}
-              />
-              <ModelConfidence
-                models={models}
-                parameter={selectedParam}
-                enabledModels={enabledModels}
-                forecastHour={forecastHour}
-              />
-            </div>
-
-            {/* Reliability warning */}
-            {showReliabilityWarning && (
-              <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-                <span className="text-xs text-amber-300 font-body">{t("forecastWarning")}</span>
-              </div>
-            )}
-
-            {/* Model data */}
-            <div className="glass-card rounded-xl p-5">
-              <h2 className="font-heading font-semibold text-sm mb-4">{t("modelData")}</h2>
-              <ModelSelector
-                models={models}
-                selectedModel={selectedModel}
-                onSelectModel={setSelectedModel}
-                forecastHour={forecastHour}
-              />
-            </div>
-
-            <HourlyForecast models={models} enabledModels={enabledModels} dataStartTime={dataStartTime} />
-
-            <DailyForecast models={models} enabledModels={enabledModels} dataStartTime={dataStartTime} />
-
-            {/* Chart controls */}
-            <div className="glass-card rounded-xl p-5">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-heading font-semibold text-sm">{t("multiModelComparison")}</h2>
-                <ModelToggle models={models} enabledModels={enabledModels} onToggle={toggleModel} />
-              </div>
-
-              <div className="mb-4">
-                <ParameterSelector selected={selectedParam} onChange={setSelectedParam} />
-              </div>
-
-              <div className="mb-2">
-                <h3 className="font-heading font-medium text-xs text-muted-foreground mb-2">
-                  {getParamLabel(selectedParam)}
-                </h3>
-                <WeatherChart
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-5 items-start">
+            <div className="space-y-5 min-w-0">
+              {/* Top row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <ForecastTimeline
+                  value={timelineIndex}
+                  max={(models[0]?.hours.length ?? 1) - 1}
+                  onChange={setTimelineIndex}
+                  hours={models[0]?.hours ?? [0]}
+                  dataStartTime={dataStartTime}
+                />
+                <ModelConfidence
                   models={models}
                   parameter={selectedParam}
                   enabledModels={enabledModels}
-                  showArea={selectedParam === "precipitation"}
+                  forecastHour={forecastHour}
                 />
               </div>
+
+              {/* Reliability warning */}
+              {showReliabilityWarning && (
+                <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span className="text-xs text-amber-300 font-body">{t("forecastWarning")}</span>
+                </div>
+              )}
+
+              {/* Model data */}
+              <div className="glass-card rounded-xl p-5">
+                <h2 className="font-heading font-semibold text-sm mb-4">{t("modelData")}</h2>
+                <ModelSelector
+                  models={models}
+                  selectedModel={selectedModel}
+                  onSelectModel={setSelectedModel}
+                  forecastHour={forecastHour}
+                />
+              </div>
+
+              <HourlyForecast models={models} enabledModels={enabledModels} dataStartTime={dataStartTime} />
+
+              <DailyForecast models={models} enabledModels={enabledModels} dataStartTime={dataStartTime} />
+
+              {/* Chart controls */}
+              <div className="glass-card rounded-xl p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-heading font-semibold text-sm">{t("multiModelComparison")}</h2>
+                  <ModelToggle models={models} enabledModels={enabledModels} onToggle={toggleModel} />
+                </div>
+
+                <div className="mb-4">
+                  <ParameterSelector selected={selectedParam} onChange={setSelectedParam} />
+                </div>
+
+                <div className="mb-2">
+                  <h3 className="font-heading font-medium text-xs text-muted-foreground mb-2">
+                    {getParamLabel(selectedParam)}
+                  </h3>
+                  <WeatherChart
+                    models={models}
+                    parameter={selectedParam}
+                    enabledModels={enabledModels}
+                    showArea={selectedParam === "precipitation"}
+                  />
+                </div>
+              </div>
+
+              {/* News at the bottom of the forecast */}
+              <NewsFeed country={location.country} variant="full" limit={8} />
             </div>
-          </>
+
+            {/* Side news rail */}
+            <aside className="lg:sticky lg:top-20">
+              <NewsFeed country={location.country} variant="compact" limit={8} />
+            </aside>
+          </div>
         )}
 
         {activeTab === "warnings" && (
           <WarningsTab lat={location.lat} lon={location.lon} country={location.country} locationName={location.name} />
+        )}
+
+        {activeTab === "news" && (
+          <NewsFeed country={location.country} variant="full" limit={25} />
         )}
 
         {activeTab === "info" && (
