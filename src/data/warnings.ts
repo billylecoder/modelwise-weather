@@ -83,7 +83,7 @@ const PROXIES = [
   (u: string) => `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(u)}`,
   (u: string) => `https://r.jina.ai/${u}`,
 ];
-async function fetchViaProxy(url: string): Promise<Response | null> {
+export async function fetchViaProxy(url: string): Promise<Response | null> {
   for (const wrap of PROXIES) {
     try {
       const r = await fetch(wrap(url));
