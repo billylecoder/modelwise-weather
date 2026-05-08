@@ -1,5 +1,5 @@
 // Weather news feed via Google News RSS (CORS-proxied).
-import { fetchViaProxy } from "./warnings";
+
 
 export interface NewsItem {
   title: string;
