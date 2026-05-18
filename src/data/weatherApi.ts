@@ -18,9 +18,6 @@ export interface ModelForecast {
   snowfall: number[];
   snowDepth: number[];
   windDirection: number[];
-  thunderstorm: number[];   // 0–100 (probability/intensity from weather code)
-  fog: (number | null)[];   // 0–100, null when visibility unavailable
-  hasFog: boolean;          // whether the model returned visibility data
 }
 
 export interface AirInfo {
@@ -59,9 +56,7 @@ export type WeatherParam = (
   "cloudCover" |
   "snowfall" |
   "snowDepth" |
-  "windDirection" |
-  "thunderstorm" |
-  "fog"
+  "windDirection"
 );
 
 export const parameterConfig: Record<WeatherParam, { label: string; unit: string; icon: string }> = {
@@ -81,8 +76,6 @@ export const parameterConfig: Record<WeatherParam, { label: string; unit: string
   snowfall: { label: "New Snow", unit: "cm", icon: "Snowflake" },
   snowDepth: { label: "Snow Depth", unit: "cm", icon: "Snowflake" },
   windDirection: { label: "Wind Direction", unit: "°", icon: "Compass" },
-  thunderstorm: { label: "Thunderstorm", unit: "%", icon: "Zap" },
-  fog: { label: "Fog", unit: "%", icon: "CloudFog" },
 };
 
 // ---------------------------------------------------------------------------
@@ -308,29 +301,6 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
 
   if (rawHours.length === 0) return null;
 
-  // Derive thunderstorm/fog from weather codes & visibility
-  // WMO weather codes: 95 thunderstorm
-  const rawThunder: (number | null)[] = rawCode.map((c) => {
-    if (c == null) return null;
-    if (c === 95) return 80;
-    if (c === 96) return 90;
-    if (c === 99) return 100;
-    return 0;
-  });
-  const hasVisData = rawVis.some((v) => v != null);
-  // Visibility (m): <200 dense fog 100, <500 90, <1000 70, <2000 40, <5000 15, else 0
-  const rawFog: (number | null)[] = hasVisData
-    ? rawVis.map((v) => {
-        if (v == null) return null;
-        if (v < 200) return 100;
-        if (v < 500) return 90;
-        if (v < 1000) return 70;
-        if (v < 2000) return 40;
-        if (v < 5000) return 15;
-        return 0;
-      })
-    : rawCode.map(() => null);
-
   // Trim trailing nulls based on temperature (primary signal)
   const { hours: trimmedHours, arrays } = trimTrailingNulls(
     {
@@ -349,8 +319,6 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
       snowfall: rawSnow,
       snowDepth: rawSnowDepth,
       windDirection: rawWindDir,
-      thunderstorm: rawThunder,
-      fog: rawFog,
     },
     rawHours,
     "temperature"
@@ -390,9 +358,6 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
       snowfall: snow as number[],
       snowDepth: arrays.snowDepth as number[],
       windDirection: arrays.windDirection as number[],
-      thunderstorm: arrays.thunderstorm as number[],
-      fog: arrays.fog as (number | null)[],
-      hasFog: hasVisData,
     },
   };
 }
@@ -428,7 +393,6 @@ async function fetchDirectFromOpenMeteo(lat: number, lon: number): Promise<Fetch
     "temperature", "precipitation", "precipitationTotal", "windSpeed", "windGusts",
     "pressure", "humidity", "dewPoint", "cape", "temp850hPa", "temp500hPa",
     "apparentTemperature", "cloudCover", "snowfall", "snowDepth", "windDirection",
-    "thunderstorm", "fog",
   ];
   let startTime = new Date().toISOString();
   if (valid.length > 0) {
