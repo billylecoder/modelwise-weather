@@ -38,7 +38,6 @@ const translations = {
     warningsSourceLabel: "Source",
     uvIndex: "UV Index",
     aqi: "Air Quality",
-    dust: "Saharan Dust",
     airQualityInfo: "Air & Sun",
     currentConditions: "Current",
     forecastTab: "Forecast",
@@ -125,7 +124,6 @@ const translations = {
     warningsSourceLabel: "Πηγή",
     uvIndex: "Δείκτης UV",
     aqi: "Ποιότητα Αέρα",
-    dust: "Σκόνη Σαχάρας",
     airQualityInfo: "Αέρας & Ήλιος",
     currentConditions: "Τώρα",
     forecastTab: "Πρόγνωση",
@@ -233,5 +231,4 @@ export const paramTranslationKey: Record<string, TranslationKey> = {
   thunderstorm: "thunderstorm",
   hail: "hail",
   fog: "fog",
-  dust: "dust",
 };

@@ -28,14 +28,6 @@ function aqiCategory(v: number): { label: string; tone: string } {
   return { label: "Extremely Poor", tone: "text-fuchsia-400" };
 }
 
-function dustCategory(v: number): { label: string; tone: string } {
-  // µg/m³ — rough thresholds
-  if (v < 20) return { label: "Clean", tone: "text-emerald-300" };
-  if (v < 100) return { label: "Light", tone: "text-amber-300" };
-  if (v < 300) return { label: "Moderate", tone: "text-orange-300" };
-  return { label: "Heavy", tone: "text-red-400" };
-}
-
 const InfoTab = ({ airInfo, dataStartTime, forecastHour }: InfoTabProps) => {
   const { t } = useI18n();
 
@@ -54,7 +46,6 @@ const InfoTab = ({ airInfo, dataStartTime, forecastHour }: InfoTabProps) => {
 
   const uv = airInfo.uvIndex[forecastHour] ?? null;
   const aqi = airInfo.aqi[forecastHour] ?? null;
-  const dust = airInfo.dust[forecastHour] ?? null;
 
   const uvMax = useMemo(() => {
     let m = 0;
@@ -65,23 +56,8 @@ const InfoTab = ({ airInfo, dataStartTime, forecastHour }: InfoTabProps) => {
     return m;
   }, [airInfo]);
 
-  const dustPeak = useMemo(() => {
-    let m = 0;
-    let idx = 0;
-    for (let i = 0; i < airInfo.dust.length; i++) {
-      const v = airInfo.dust[i];
-      if (v != null && v > m) { m = v; idx = i; }
-    }
-    return { value: m, idx };
-  }, [airInfo]);
-
-  const dustPeakTime = base
-    ? addHoursNaive(base, dustPeak.idx)
-    : null;
-
   const uvCat = uv != null ? uvCategory(uv) : null;
   const aqiCat = aqi != null ? aqiCategory(aqi) : null;
-  const dustCat = dust != null ? dustCategory(dust) : null;
 
   return (
     <div className="space-y-4">
@@ -118,27 +94,6 @@ const InfoTab = ({ airInfo, dataStartTime, forecastHour }: InfoTabProps) => {
             {aqiCat && <span className={`text-sm font-heading ${aqiCat.tone}`}>{aqiCat.label}</span>}
           </div>
           <p className="text-[11px] text-muted-foreground font-body">European AQI scale</p>
-        </div>
-
-        {/* Saharan Dust */}
-        <div className="glass-card rounded-xl p-5 space-y-2">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Sparkles className="w-4 h-4 text-amber-400" />
-            <span className="text-xs font-body uppercase tracking-wide">{t("dust")}</span>
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="font-heading font-bold text-3xl">
-              {dust != null ? Math.round(dust) : "-"}
-            </span>
-            <span className="text-xs text-muted-foreground font-body">µg/m³</span>
-            {dustCat && <span className={`text-sm font-heading ${dustCat.tone}`}>{dustCat.label}</span>}
-          </div>
-          {dustPeak.value > 0 && dustPeakTime && (
-            <p className="text-[11px] text-muted-foreground font-body">
-              Peak: <span className="text-foreground">{Math.round(dustPeak.value)} µg/m³</span> at{" "}
-              {String(dustPeakTime.hour).padStart(2, "0")}h (+{dustPeak.idx}h)
-            </p>
-          )}
         </div>
       </div>
     </div>
