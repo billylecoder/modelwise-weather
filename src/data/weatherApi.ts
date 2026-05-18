@@ -19,7 +19,6 @@ export interface ModelForecast {
   snowDepth: number[];
   windDirection: number[];
   thunderstorm: number[];   // 0–100 (probability/intensity from weather code)
-  hail: number[];           // 0–100
   fog: (number | null)[];   // 0–100, null when visibility unavailable
   hasFog: boolean;          // whether the model returned visibility data
 }
@@ -62,7 +61,6 @@ export type WeatherParam = (
   "snowDepth" |
   "windDirection" |
   "thunderstorm" |
-  "hail" |
   "fog"
 );
 
@@ -84,7 +82,6 @@ export const parameterConfig: Record<WeatherParam, { label: string; unit: string
   snowDepth: { label: "Snow Depth", unit: "cm", icon: "Snowflake" },
   windDirection: { label: "Wind Direction", unit: "°", icon: "Compass" },
   thunderstorm: { label: "Thunderstorm", unit: "%", icon: "Zap" },
-  hail: { label: "Hail", unit: "%", icon: "CloudHail" },
   fog: { label: "Fog", unit: "%", icon: "CloudFog" },
 };
 
@@ -311,19 +308,13 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
 
   if (rawHours.length === 0) return null;
 
-  // Derive thunderstorm/hail/fog from weather codes & visibility
-  // WMO weather codes: 95 thunderstorm, 96/99 thunderstorm with hail
+  // Derive thunderstorm/fog from weather codes & visibility
+  // WMO weather codes: 95 thunderstorm
   const rawThunder: (number | null)[] = rawCode.map((c) => {
     if (c == null) return null;
     if (c === 95) return 80;
     if (c === 96) return 90;
     if (c === 99) return 100;
-    return 0;
-  });
-  const rawHail: (number | null)[] = rawCode.map((c) => {
-    if (c == null) return null;
-    if (c === 96) return 60;
-    if (c === 99) return 90;
     return 0;
   });
   const hasVisData = rawVis.some((v) => v != null);
@@ -359,7 +350,6 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
       snowDepth: rawSnowDepth,
       windDirection: rawWindDir,
       thunderstorm: rawThunder,
-      hail: rawHail,
       fog: rawFog,
     },
     rawHours,
@@ -401,7 +391,6 @@ function parseModelResponse(data: any, modelName: string, color: string): ParseR
       snowDepth: arrays.snowDepth as number[],
       windDirection: arrays.windDirection as number[],
       thunderstorm: arrays.thunderstorm as number[],
-      hail: arrays.hail as number[],
       fog: arrays.fog as (number | null)[],
       hasFog: hasVisData,
     },
@@ -439,7 +428,7 @@ async function fetchDirectFromOpenMeteo(lat: number, lon: number): Promise<Fetch
     "temperature", "precipitation", "precipitationTotal", "windSpeed", "windGusts",
     "pressure", "humidity", "dewPoint", "cape", "temp850hPa", "temp500hPa",
     "apparentTemperature", "cloudCover", "snowfall", "snowDepth", "windDirection",
-    "thunderstorm", "hail", "fog",
+    "thunderstorm", "fog",
   ];
   let startTime = new Date().toISOString();
   if (valid.length > 0) {

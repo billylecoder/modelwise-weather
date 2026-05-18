@@ -30,7 +30,6 @@ const translations = {
     snowDepth: "Snow Depth",
     windDirection: "Wind Direction",
     thunderstorm: "Thunderstorm",
-    hail: "Hail",
     fog: "Fog",
     home: "Home",
     warningsTab: "Warnings",
@@ -116,7 +115,6 @@ const translations = {
     snowDepth: "Πάχος Χιονιού",
     windDirection: "Διεύθυνση Ανέμου",
     thunderstorm: "Καταιγίδα",
-    hail: "Χαλάζι",
     fog: "Ομίχλη",
     home: "Αρχική",
     warningsTab: "Προειδοποιήσεις",
@@ -229,6 +227,5 @@ export const paramTranslationKey: Record<string, TranslationKey> = {
   snowDepth: "snowDepth",
   windDirection: "windDirection",
   thunderstorm: "thunderstorm",
-  hail: "hail",
   fog: "fog",
 };
