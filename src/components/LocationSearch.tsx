@@ -221,7 +221,7 @@ export default function LocationSearch({ currentLocation, onSelectLocation }: Pr
           {coordHint && (
             <button
               onClick={() => applyCoords(coordHint.lat, coordHint.lon)}
-              className="w-full text-left px-3 py-2 hover:bg-accent/50 transition-colors flex items-center gap-2 text-sm"
+              className="w-full text-left px-3 py-2 hover:bg-accent/50 focus:bg-accent/50 transition-colors flex items-center gap-2 text-sm"
             >
               <Navigation className="w-4 h-4 text-primary" />
               <div className="min-w-0 flex-1">
