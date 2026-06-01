@@ -167,9 +167,28 @@ export default function LocationSearch({ currentLocation, onSelectLocation }: Pr
                   if (e.key === "Escape") {
                     setOpen(false);
                     setQuery("");
+                    return;
                   }
-                  if (e.key === "Enter" && coordHint) {
-                    applyCoords(coordHint.lat, coordHint.lon);
+                  if (e.key === "ArrowDown") {
+                    e.preventDefault();
+                    const max = results.length - 1;
+                    setActiveIndex((i) => (i < max ? i + 1 : max));
+                    return;
+                  }
+                  if (e.key === "ArrowUp") {
+                    e.preventDefault();
+                    setActiveIndex((i) => (i > 0 ? i - 1 : -1));
+                    return;
+                  }
+                  if (e.key === "Enter") {
+                    if (activeIndex >= 0 && results[activeIndex]) {
+                      e.preventDefault();
+                      select(results[activeIndex]);
+                      return;
+                    }
+                    if (coordHint) {
+                      applyCoords(coordHint.lat, coordHint.lon);
+                    }
                   }
                 }}
               />
