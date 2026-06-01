@@ -13,7 +13,10 @@ interface ParameterSelectorProps {
 
 const ParameterSelector = ({ selected, onChange }: ParameterSelectorProps) => {
   const { t } = useI18n();
-  const params = Object.entries(parameterConfig) as [WeatherParam, typeof parameterConfig[WeatherParam]][];
+  // Wind direction is shown in the model card grid (with arrow), but not in
+  // the multi-model comparison chart — averaging degrees as a line is misleading.
+  const params = (Object.entries(parameterConfig) as [WeatherParam, typeof parameterConfig[WeatherParam]][])
+    .filter(([key]) => key !== "windDirection");
 
   return (
     <div className="flex flex-wrap gap-1.5">
