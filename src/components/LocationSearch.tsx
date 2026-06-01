@@ -49,8 +49,10 @@ export default function LocationSearch({ currentLocation, onSelectLocation }: Pr
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [coordHint, setCoordHint] = useState<{ lat: number; lon: number } | null>(null);
+  const [activeIndex, setActiveIndex] = useState<number>(-1);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const search = useCallback(async (q: string) => {
     if (q.trim().length < 2) {
