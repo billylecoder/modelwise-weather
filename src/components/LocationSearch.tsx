@@ -241,11 +241,15 @@ export default function LocationSearch({ currentLocation, onSelectLocation }: Pr
           {error && !loading && (
             <div className="px-3 py-2 text-xs text-destructive">{error}</div>
           )}
-          {!loading && results.map((r) => (
+          {!loading && results.map((r, idx) => (
             <button
               key={r.id}
+              ref={(el) => { itemRefs.current[idx] = el; }}
               onClick={() => select(r)}
-              className="w-full text-left px-3 py-2 hover:bg-accent/50 transition-colors flex items-center gap-2 text-sm"
+              className={cn(
+                "w-full text-left px-3 py-2 hover:bg-accent/50 transition-colors flex items-center gap-2 text-sm",
+                activeIndex === idx && "bg-accent/50"
+              )}
             >
               <span className="text-base">{flagEmoji(r.country_code)}</span>
               <div className="min-w-0 flex-1">
