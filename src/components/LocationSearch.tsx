@@ -130,6 +130,15 @@ export default function LocationSearch({ currentLocation, onSelectLocation }: Pr
     setCoordHint(null);
   };
 
+  useEffect(() => {
+    if (activeIndex >= 0) {
+      const el = itemRefs.current[activeIndex];
+      if (el) {
+        el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      }
+    }
+  }, [activeIndex]);
+
   const applyCoords = (lat: number, lon: number) => {
     onSelectLocation({ name: `${lat.toFixed(4)}°, ${lon.toFixed(4)}°`, lat, lon, country: "" });
     setQuery("");
