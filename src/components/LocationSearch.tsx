@@ -100,6 +100,7 @@ export default function LocationSearch({ currentLocation, onSelectLocation }: Pr
     }
 
     setCoordHint(null);
+    setActiveIndex(-1);
 
     if (trimmed.length < 2) {
       setResults([]);
