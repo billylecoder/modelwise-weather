@@ -3,6 +3,7 @@ import { Search, MapPin, Loader2, Navigation } from "lucide-react";
 import { Location } from "@/data/weatherApi";
 import { useI18n } from "@/i18n";
 import LocationMap from "@/components/LocationMap";
+import { cn } from "@/lib/utils";
 
 interface GeoResult {
   id: number;
@@ -49,8 +50,10 @@ export default function LocationSearch({ currentLocation, onSelectLocation }: Pr
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [coordHint, setCoordHint] = useState<{ lat: number; lon: number } | null>(null);
+  const [activeIndex, setActiveIndex] = useState<number>(-1);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const search = useCallback(async (q: string) => {
     if (q.trim().length < 2) {
@@ -98,6 +101,7 @@ export default function LocationSearch({ currentLocation, onSelectLocation }: Pr
     }
 
     setCoordHint(null);
+    setActiveIndex(-1);
 
     if (trimmed.length < 2) {
       setResults([]);
@@ -126,6 +130,15 @@ export default function LocationSearch({ currentLocation, onSelectLocation }: Pr
     setResults([]);
     setCoordHint(null);
   };
+
+  useEffect(() => {
+    if (activeIndex >= 0) {
+      const el = itemRefs.current[activeIndex];
+      if (el) {
+        el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      }
+    }
+  }, [activeIndex]);
 
   const applyCoords = (lat: number, lon: number) => {
     onSelectLocation({ name: `${lat.toFixed(4)}°, ${lon.toFixed(4)}°`, lat, lon, country: "" });
@@ -164,9 +177,28 @@ export default function LocationSearch({ currentLocation, onSelectLocation }: Pr
                   if (e.key === "Escape") {
                     setOpen(false);
                     setQuery("");
+                    return;
                   }
-                  if (e.key === "Enter" && coordHint) {
-                    applyCoords(coordHint.lat, coordHint.lon);
+                  if (e.key === "ArrowDown") {
+                    e.preventDefault();
+                    const max = results.length - 1;
+                    setActiveIndex((i) => (i < max ? i + 1 : max));
+                    return;
+                  }
+                  if (e.key === "ArrowUp") {
+                    e.preventDefault();
+                    setActiveIndex((i) => (i > 0 ? i - 1 : -1));
+                    return;
+                  }
+                  if (e.key === "Enter") {
+                    if (activeIndex >= 0 && results[activeIndex]) {
+                      e.preventDefault();
+                      select(results[activeIndex]);
+                      return;
+                    }
+                    if (coordHint) {
+                      applyCoords(coordHint.lat, coordHint.lon);
+                    }
                   }
                 }}
               />
@@ -190,7 +222,7 @@ export default function LocationSearch({ currentLocation, onSelectLocation }: Pr
           {coordHint && (
             <button
               onClick={() => applyCoords(coordHint.lat, coordHint.lon)}
-              className="w-full text-left px-3 py-2 hover:bg-accent/50 transition-colors flex items-center gap-2 text-sm"
+              className="w-full text-left px-3 py-2 hover:bg-accent/50 focus:bg-accent/50 transition-colors flex items-center gap-2 text-sm"
             >
               <Navigation className="w-4 h-4 text-primary" />
               <div className="min-w-0 flex-1">
@@ -210,11 +242,15 @@ export default function LocationSearch({ currentLocation, onSelectLocation }: Pr
           {error && !loading && (
             <div className="px-3 py-2 text-xs text-destructive">{error}</div>
           )}
-          {!loading && results.map((r) => (
+          {!loading && results.map((r, idx) => (
             <button
               key={r.id}
+              ref={(el) => { itemRefs.current[idx] = el; }}
               onClick={() => select(r)}
-              className="w-full text-left px-3 py-2 hover:bg-accent/50 transition-colors flex items-center gap-2 text-sm"
+              className={cn(
+                "w-full text-left px-3 py-2 hover:bg-accent/50 transition-colors flex items-center gap-2 text-sm",
+                activeIndex === idx && "bg-accent/50"
+              )}
             >
               <span className="text-base">{flagEmoji(r.country_code)}</span>
               <div className="min-w-0 flex-1">
