@@ -161,7 +161,7 @@ const translations = {
     credits: "Πηγές",
     creditsTitle: "Πηγές Δεδομένων",
     creditsIntro: "Το WeatherIntel βασίζεται σε ελεύθερα δεδομένα. Σεβαστείτε την άδεια κάθε πηγής.",
-    creditWeather: "Προγνώσεις: Open-Meteo (CC BY 4.0) — ECMWF IFS, NOAA GFS, DWD ICON & ICON-EU.",
+    creditWeather: "Προγνώσεις: Open-Meteo (CC BY 4.0) — ECMWF IFS, NOAA GFS, DWD ICON, ECCC GEM.",
     creditAir: "Ποιότητα αέρα & UV: Open-Meteo Air Quality, Copernicus CAMS Europe.",
     creditGeo: "Γεωκωδικοποίηση: Open-Meteo και OpenStreetMap Nominatim (ODbL).",
     creditMap: "Πλακίδια χάρτη: © OpenStreetMap contributors, CARTO (CC BY 3.0).",
