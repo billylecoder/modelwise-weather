@@ -90,6 +90,10 @@ const ModelSelector = ({ models, selectedModel, onSelectModel, forecastHour }: M
     </div>
   );
 
+  const activeTransition = (active.transitions ?? [])
+    .filter((t) => forecastHour >= t.hour)
+    .sort((a, b) => b.hour - a.hour)[0];
+
   return (
     <div className="space-y-3">
       {/* Model tabs */}
@@ -120,6 +124,15 @@ const ModelSelector = ({ models, selectedModel, onSelectModel, forecastHour }: M
           );
         })}
       </div>
+
+      {activeTransition && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-300 font-body">
+          <span className="font-semibold">{activeTransition.fromRun} → {activeTransition.toRun}</span>
+          <span className="opacity-80">
+            Latest {activeTransition.fromRun} run only reaches +{activeTransition.hour}h — showing previous {activeTransition.toRun} run beyond.
+          </span>
+        </div>
+      )}
 
       {/* Basic parameters */}
       {renderParams(BASIC_PARAMS)}

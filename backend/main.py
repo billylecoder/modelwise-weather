@@ -32,7 +32,7 @@ logging.basicConfig(level=logging.INFO)
 MODEL_CONFIGS = [
     {"id": "ecmwf_ifs025", "name": "ECMWF",   "color": "hsl(200, 80%, 55%)"},
     {"id": "gfs_seamless",  "name": "GFS",     "color": "hsl(140, 70%, 50%)"},
-    {"id": "icon_seamless", "name": "ICON-EU", "color": "hsl(280, 70%, 60%)"},
+    {"id": "icon_global",   "name": "ICON",    "color": "hsl(280, 70%, 60%)"},
     {"id": "gem_seamless",  "name": "GEM",     "color": "hsl(30, 90%, 55%)"},
 ]
 

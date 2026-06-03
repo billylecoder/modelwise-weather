@@ -1,3 +1,12 @@
+export interface RunTransition {
+  /** Local-naive hour offset (matches `hours[]`) where this transition begins. */
+  hour: number;
+  /** Run label being switched FROM (e.g. "06z"). */
+  fromRun: string;
+  /** Run label being switched TO (e.g. "00z"). */
+  toRun: string;
+}
+
 export interface ModelForecast {
   model: string;
   color: string;
@@ -18,10 +27,16 @@ export interface ModelForecast {
   snowfall: number[];
   snowDepth: number[];
   windDirection: number[];
+  /** Latest run cycle used for the leading portion of the data (e.g. "06z"). */
+  runLabel?: string;
+  /** Run-cycle max forecast hours, e.g. 144 for ECMWF 06z. */
+  runMaxHours?: number;
+  /** Hours at which the underlying run source changes (cached older but longer run takes over). */
+  transitions?: RunTransition[];
 }
 
 export interface AirInfo {
-  hours: number[];      // forecast hour offsets aligned to startTime
+  hours: number[];
   uvIndex: (number | null)[];
   aqi: (number | null)[];
 }
@@ -40,24 +55,23 @@ export const defaultLocation: Location = {
   country: "GR",
 };
 
-export type WeatherParam = (
-  "temperature" |
-  "precipitation" |
-  "precipitationTotal" |
-  "windSpeed" |
-  "windGusts" |
-  "pressure" |
-  "humidity" |
-  "dewPoint" |
-  "cape" |
-  "temp850hPa" | 
-  "temp500hPa" |
-  "apparentTemperature" |
-  "cloudCover" |
-  "snowfall" |
-  "snowDepth" |
-  "windDirection"
-);
+export type WeatherParam =
+  | "temperature"
+  | "precipitation"
+  | "precipitationTotal"
+  | "windSpeed"
+  | "windGusts"
+  | "pressure"
+  | "humidity"
+  | "dewPoint"
+  | "cape"
+  | "temp850hPa"
+  | "temp500hPa"
+  | "apparentTemperature"
+  | "cloudCover"
+  | "snowfall"
+  | "snowDepth"
+  | "windDirection";
 
 export const parameterConfig: Record<WeatherParam, { label: string; unit: string; icon: string }> = {
   temperature: { label: "Temperature", unit: "°C", icon: "Thermometer" },
@@ -79,70 +93,137 @@ export const parameterConfig: Record<WeatherParam, { label: string; unit: string
 };
 
 // ---------------------------------------------------------------------------
-// Run cycle detection — determines the latest available model run
+// Model run schedules
+//   runs: { hour: UTC, maxHours: forecast length for that run }
+//   delayHours: typical lag between run start and data availability
 // ---------------------------------------------------------------------------
+interface RunSpec { hour: number; maxHours: number }
 interface ModelConfig {
   id: string;
   name: string;
   color: string;
-  runs: number[];       // available run hours (UTC)
-  delayHours: number;   // hours after run time before data is typically available
+  runs: RunSpec[];
+  delayHours: number;
+  /** Cap the data we keep regardless of what the model actually outputs. */
+  hardCapHours: number;
 }
 
 const MODEL_DEFS: ModelConfig[] = [
-  { id: "ecmwf_ifs025", name: "ECMWF",   color: "hsl(200, 80%, 55%)", runs: [0, 6, 12, 18], delayHours: 6 },
-  { id: "gfs_seamless",  name: "GFS",     color: "hsl(140, 70%, 50%)", runs: [0, 6, 12, 18], delayHours: 5 },
-  { id: "icon_seamless", name: "ICON-EU", color: "hsl(280, 70%, 60%)", runs: [0, 3, 6, 9, 12, 15, 18, 21], delayHours: 4 },
-  { id: "gem_seamless",  name: "GEM",     color: "hsl(30, 90%, 55%)",  runs: [0, 12],        delayHours: 6 },
+  {
+    id: "ecmwf_ifs025",
+    name: "ECMWF",
+    color: "hsl(200, 80%, 55%)",
+    runs: [
+      { hour: 0,  maxHours: 360 },
+      { hour: 6,  maxHours: 144 },
+      { hour: 12, maxHours: 360 },
+      { hour: 18, maxHours: 144 },
+    ],
+    delayHours: 6,
+    hardCapHours: 360,
+  },
+  {
+    id: "gfs_seamless",
+    name: "GFS",
+    color: "hsl(140, 70%, 50%)",
+    // GFS runs 384h on every cycle; we cap at 360h per product spec.
+    runs: [
+      { hour: 0,  maxHours: 360 },
+      { hour: 6,  maxHours: 360 },
+      { hour: 12, maxHours: 360 },
+      { hour: 18, maxHours: 360 },
+    ],
+    delayHours: 5,
+    hardCapHours: 360,
+  },
+  {
+    id: "icon_global",
+    name: "ICON",
+    color: "hsl(280, 70%, 60%)",
+    runs: [
+      { hour: 0,  maxHours: 180 },
+      { hour: 6,  maxHours: 120 },
+      { hour: 12, maxHours: 180 },
+      { hour: 18, maxHours: 120 },
+    ],
+    delayHours: 4,
+    hardCapHours: 180,
+  },
+  {
+    id: "gem_seamless",
+    name: "GEM",
+    color: "hsl(30, 90%, 55%)",
+    runs: [
+      { hour: 0,  maxHours: 240 },
+      { hour: 12, maxHours: 240 },
+    ],
+    delayHours: 6,
+    hardCapHours: 240,
+  },
 ];
 
-function getLatestRun(runs: number[], delayHours: number): number {
-  const now = new Date();
-  const utcHour = now.getUTCHours();
-  // Find the latest run whose data would be available by now
-  const sorted = [...runs].sort((a, b) => b - a);
-  for (const run of sorted) {
-    if (utcHour >= run + delayHours) return run;
-  }
-  // If none available today, use previous day's last run
-  return sorted[0];
+function formatRun(runHour: number): string {
+  return `${String(runHour).padStart(2, "0")}z`;
 }
 
-function formatRun(run: number): string {
-  return `${String(run).padStart(2, "0")}z`;
+/** Returns date keyed as YYYY-MM-DD (UTC). */
+function utcDateKey(ms: number): string {
+  const d = new Date(ms);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+}
+
+/** All recent run cycles (most-recent first), each annotated with absolute UTC ms. */
+function pastRunCycles(def: ModelConfig, now = Date.now(), lookbackHours = 96):
+  Array<{ run: RunSpec; runDateUTC: string; runStartMs: number }> {
+  const out: Array<{ run: RunSpec; runDateUTC: string; runStartMs: number }> = [];
+  const earliest = now - lookbackHours * 3600000;
+  // Walk back day by day
+  const today = new Date(now);
+  const todayUTCms = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+  for (let dayOffset = 0; dayOffset <= Math.ceil(lookbackHours / 24) + 1; dayOffset++) {
+    const dayMs = todayUTCms - dayOffset * 86400000;
+    for (const r of def.runs) {
+      const runStartMs = dayMs + r.hour * 3600000;
+      if (runStartMs > now) continue;
+      if (runStartMs < earliest) continue;
+      // Only consider runs whose data has had time to publish
+      if (runStartMs + def.delayHours * 3600000 > now) continue;
+      out.push({ run: r, runDateUTC: utcDateKey(runStartMs), runStartMs });
+    }
+  }
+  out.sort((a, b) => b.runStartMs - a.runStartMs);
+  return out;
 }
 
 export interface ModelWithRun {
   id: string;
   name: string;
-  displayName: string; // e.g. "GFS (12z)"
+  displayName: string;
   color: string;
   run: number;
+  runMaxHours: number;
 }
 
 export function getActiveModels(): ModelWithRun[] {
   return MODEL_DEFS.map((def) => {
-    const run = getLatestRun(def.runs, def.delayHours);
+    const latest = pastRunCycles(def)[0];
+    const runHour = latest?.run.hour ?? def.runs[0].hour;
+    const runMaxHours = latest?.run.maxHours ?? def.runs[0].maxHours;
     return {
       id: def.id,
       name: def.name,
-      displayName: `${def.name} (${formatRun(run)})`,
+      displayName: `${def.name} (${formatRun(runHour)})`,
       color: def.color,
-      run,
+      run: runHour,
+      runMaxHours,
     };
   });
 }
 
-// Keep backward-compatible MODEL_CONFIGS shape for API calls
-export const MODEL_CONFIGS = MODEL_DEFS.map((d) => ({
-  id: d.id,
-  name: d.name,
-  color: d.color,
-}));
+export const MODEL_CONFIGS = MODEL_DEFS.map((d) => ({ id: d.id, name: d.name, color: d.color }));
 
 // ---------------------------------------------------------------------------
-// Backend URL — set VITE_BACKEND_URL to point at your FastAPI instance.
-// Falls back to direct Open-Meteo calls when the backend is unavailable.
+// Backend (optional FastAPI) — falls back to direct Open-Meteo
 // ---------------------------------------------------------------------------
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL as string | undefined;
 
@@ -152,19 +233,15 @@ export interface FetchResult {
   airInfo?: AirInfo;
 }
 
-// ---------------------------------------------------------------------------
-// Strategy 1: Fetch from FastAPI backend
-// ---------------------------------------------------------------------------
 async function fetchFromBackend(lat: number, lon: number): Promise<FetchResult> {
   const url = `${BACKEND_URL}/api/forecast?lat=${lat}&lon=${lon}`;
   const res = await fetch(url, { signal: AbortSignal.timeout(20000) });
   if (!res.ok) throw new Error(`Backend HTTP ${res.status}`);
-  // Backend already normalizes — return as-is, no further processing needed
   return res.json();
 }
 
 // ---------------------------------------------------------------------------
-// Strategy 2: Direct Open-Meteo (fallback)
+// Open-Meteo direct fetch
 // ---------------------------------------------------------------------------
 const HOURLY_PARAMS = [
   "temperature_2m",
@@ -186,7 +263,11 @@ const HOURLY_PARAMS = [
   "visibility",
 ];
 
-const MAX_HOURS = 360;
+const NUMERIC_FIELDS: (keyof ModelForecast)[] = [
+  "temperature", "precipitation", "precipitationTotal", "windSpeed", "windGusts",
+  "pressure", "humidity", "dewPoint", "cape", "temp850hPa", "temp500hPa",
+  "apparentTemperature", "cloudCover", "snowfall", "snowDepth", "windDirection",
+];
 
 function buildApiUrl(lat: number, lon: number, modelId: string): string {
   const params = HOURLY_PARAMS.join(",");
@@ -194,16 +275,12 @@ function buildApiUrl(lat: number, lon: number, modelId: string): string {
 }
 
 interface ParseResult {
-  model: ModelForecast;
   startTimeISO: string;
+  utcOffsetSec: number;
+  hours: number[];
+  arrays: Record<string, (number | null)[]>;
 }
 
-/**
- * De-interpolate precipitation. When Open-Meteo returns 3h/6h precipitation
- * for long-range data, it repeats the bucket total across each hour. Detect
- * runs of identical non-zero values and divide so the per-hour value reflects
- * a true hourly amount (sum of the run still equals the bucket total).
- */
 function deinterpolatePrecip(arr: (number | null)[]): (number | null)[] {
   const out = arr.slice();
   let i = 0;
@@ -222,232 +299,326 @@ function deinterpolatePrecip(arr: (number | null)[]): (number | null)[] {
   return out;
 }
 
-/** Trim trailing entries where the primary signal (temperature) is null. */
-function trimTrailingNulls(
-  arrays: Record<string, (number | null)[]>,
-  hours: number[],
-  primaryKey: string
-): { hours: number[]; arrays: Record<string, (number | null)[]> } {
-  const primary = arrays[primaryKey];
-  let end = primary.length;
-  while (end > 0 && primary[end - 1] == null) end--;
-  if (end === primary.length) return { hours, arrays };
-  const trimmed: Record<string, (number | null)[]> = {};
-  for (const k of Object.keys(arrays)) trimmed[k] = arrays[k].slice(0, end);
-  return { hours: hours.slice(0, end), arrays: trimmed };
-}
-
-function parseModelResponse(data: any, modelName: string, color: string): ParseResult | null {
-  const hourly = data.hourly;
-  if (!hourly || !hourly.time || hourly.time.length === 0) return null;
-
+function parseRaw(data: any): ParseResult | null {
+  const hourly = data?.hourly;
+  if (!hourly?.time?.length) return null;
   const startTimeISO = hourly.time[0] as string;
-  const startTime = new Date(startTimeISO).getTime();
+  const utcOffsetSec: number = typeof data?.utc_offset_seconds === "number" ? data.utc_offset_seconds : 0;
+  const startMs = new Date(startTimeISO).getTime();
 
-  const rawHours: number[] = [];
-  const rawTemp: (number | null)[] = [];
-  const rawPrecip: (number | null)[] = [];
-  const rawWind: (number | null)[] = [];
-  const rawGusts: (number | null)[] = [];
-  const rawPressure: (number | null)[] = [];
-  const rawHumidity: (number | null)[] = [];
-  const rawDew: (number | null)[] = [];
-  const rawCape: (number | null)[] = [];
-  const rawTemp850: (number | null)[] = [];
-  const rawTemp500: (number | null)[] = [];
-  const rawApparent: (number | null)[] = [];
-  const rawCloud: (number | null)[] = [];
-  const rawSnow: (number | null)[] = [];
-  const rawSnowDepth: (number | null)[] = [];
-  const rawWindDir: (number | null)[] = [];
-  const rawCode: (number | null)[] = [];
-  const rawVis: (number | null)[] = [];
+  const hours: number[] = [];
+  const arr = (k: string) => (hourly[k] as (number | null)[] | undefined) ?? [];
+  const out: Record<string, (number | null)[]> = {
+    temperature: [], precipitation: [], windSpeed: [], windGusts: [],
+    pressure: [], humidity: [], dewPoint: [], cape: [], temp850hPa: [], temp500hPa: [],
+    apparentTemperature: [], cloudCover: [], snowfall: [], snowDepth: [], windDirection: [],
+  };
 
   for (let i = 0; i < hourly.time.length; i++) {
-    const h = Math.round((new Date(hourly.time[i]).getTime() - startTime) / 3600000);
-    if (h > MAX_HOURS) break;
-
-    rawHours.push(h);
-    rawTemp.push(hourly.temperature_2m?.[i] ?? null);
-    rawPrecip.push(hourly.precipitation?.[i] ?? null);
-    rawWind.push(hourly.wind_speed_10m?.[i] ?? null);
-    rawGusts.push(hourly.wind_gusts_10m?.[i] ?? null);
-    rawPressure.push(hourly.pressure_msl?.[i] ?? null);
-    rawHumidity.push(hourly.relative_humidity_2m?.[i] ?? null);
-    rawDew.push(hourly.dew_point_2m?.[i] ?? null);
-    {
-      const c = hourly.cape?.[i];
-      rawCape.push(c == null ? null : Math.max(0, c));
-    }
-    rawTemp850.push(hourly.temperature_850hPa?.[i] ?? null);
-    rawTemp500.push(hourly.temperature_500hPa?.[i] ?? null);
-    rawApparent.push(hourly.apparent_temperature?.[i] ?? null);
-    rawCloud.push(hourly.cloud_cover?.[i] ?? null);
-    {
-      const s = hourly.snowfall?.[i];
-      rawSnow.push(s == null ? null : Math.max(0, s));
-    }
-    {
-      const sd = hourly.snow_depth?.[i];
-      rawSnowDepth.push(sd == null ? null : Math.max(0, sd * 100));
-    }
-    {
-      const wd = hourly.wind_direction_10m?.[i];
-      rawWindDir.push(wd == null ? null : ((wd % 360) + 360) % 360);
-    }
-    rawCode.push(hourly.weather_code?.[i] ?? null);
-    rawVis.push(hourly.visibility?.[i] ?? null);
+    const h = Math.round((new Date(hourly.time[i]).getTime() - startMs) / 3600000);
+    hours.push(h);
+    out.temperature.push(arr("temperature_2m")[i] ?? null);
+    out.precipitation.push(arr("precipitation")[i] ?? null);
+    out.windSpeed.push(arr("wind_speed_10m")[i] ?? null);
+    out.windGusts.push(arr("wind_gusts_10m")[i] ?? null);
+    out.pressure.push(arr("pressure_msl")[i] ?? null);
+    out.humidity.push(arr("relative_humidity_2m")[i] ?? null);
+    out.dewPoint.push(arr("dew_point_2m")[i] ?? null);
+    const c = arr("cape")[i]; out.cape.push(c == null ? null : Math.max(0, c));
+    out.temp850hPa.push(arr("temperature_850hPa")[i] ?? null);
+    out.temp500hPa.push(arr("temperature_500hPa")[i] ?? null);
+    out.apparentTemperature.push(arr("apparent_temperature")[i] ?? null);
+    out.cloudCover.push(arr("cloud_cover")[i] ?? null);
+    const s = arr("snowfall")[i]; out.snowfall.push(s == null ? null : Math.max(0, s));
+    const sd = arr("snow_depth")[i]; out.snowDepth.push(sd == null ? null : Math.max(0, sd * 100));
+    const wd = arr("wind_direction_10m")[i]; out.windDirection.push(wd == null ? null : ((wd % 360) + 360) % 360);
   }
 
-  if (rawHours.length === 0) return null;
+  // Trim trailing nulls based on temperature
+  let end = out.temperature.length;
+  while (end > 0 && out.temperature[end - 1] == null) end--;
+  if (end === 0) return null;
+  const hoursT = hours.slice(0, end);
+  for (const k of Object.keys(out)) out[k] = out[k].slice(0, end);
 
-  // Trim trailing nulls based on temperature (primary signal)
-  const { hours: trimmedHours, arrays } = trimTrailingNulls(
-    {
-      temperature: rawTemp,
-      precipitation: rawPrecip,
-      windSpeed: rawWind,
-      windGusts: rawGusts,
-      pressure: rawPressure,
-      humidity: rawHumidity,
-      dewPoint: rawDew,
-      cape: rawCape,
-      temp850hPa: rawTemp850,
-      temp500hPa: rawTemp500,
-      apparentTemperature: rawApparent,
-      cloudCover: rawCloud,
-      snowfall: rawSnow,
-      snowDepth: rawSnowDepth,
-      windDirection: rawWindDir,
-    },
-    rawHours,
-    "temperature"
-  );
+  out.precipitation = deinterpolatePrecip(out.precipitation);
+  out.snowfall = deinterpolatePrecip(out.snowfall);
 
-  if (trimmedHours.length === 0) return null;
+  return { startTimeISO, utcOffsetSec, hours: hoursT, arrays: out };
+}
 
-  const precip = deinterpolatePrecip(arrays.precipitation);
-  const snow = deinterpolatePrecip(arrays.snowfall);
+// ---------------------------------------------------------------------------
+// LocalStorage cache for run cycles. Lets us splice in a longer prior run
+// (e.g. 00z 360h) when the latest run (e.g. 06z 144h) is shorter.
+// ---------------------------------------------------------------------------
+interface CachedRun {
+  modelId: string;
+  runHour: number;
+  runDateUTC: string;
+  runMaxHours: number;
+  startTimeISO: string;
+  utcOffsetSec: number;
+  hours: number[];
+  arrays: Record<string, (number | null)[]>;
+  fetchedAt: number;
+}
 
-  const precipTotal: (number | null)[] = [];
-  let acc = 0;
-  for (const v of precip) {
-    if (v != null) acc += v;
-    precipTotal.push(+acc.toFixed(2));
+const CACHE_VERSION = "v2";
+const cacheKey = (modelId: string, lat: number, lon: number) =>
+  `wi:${CACHE_VERSION}:${modelId}:${lat.toFixed(2)}:${lon.toFixed(2)}`;
+
+function loadCache(modelId: string, lat: number, lon: number): CachedRun[] {
+  try {
+    const raw = localStorage.getItem(cacheKey(modelId, lat, lon));
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch { return []; }
+}
+
+function saveCache(modelId: string, lat: number, lon: number, entries: CachedRun[]) {
+  try {
+    // Keep at most 8 most-recent, drop anything older than 7 days
+    const cutoff = Date.now() - 7 * 86400000;
+    const dedup = new Map<string, CachedRun>();
+    for (const e of entries) {
+      if (e.fetchedAt < cutoff) continue;
+      dedup.set(`${e.runDateUTC}:${e.runHour}`, e);
+    }
+    const list = [...dedup.values()]
+      .sort((a, b) => b.fetchedAt - a.fetchedAt)
+      .slice(0, 8);
+    localStorage.setItem(cacheKey(modelId, lat, lon), JSON.stringify(list));
+  } catch { /* quota — ignore */ }
+}
+
+/** Compute absolute UTC ms at a given local-naive hour offset. */
+function absMs(startTimeISO: string, utcOffsetSec: number, hourOffset: number): number {
+  return new Date(startTimeISO).getTime() - utcOffsetSec * 1000 + hourOffset * 3600000;
+}
+
+/** Truncate parsed data so nothing extends past `runStartMs + runMaxHours`. */
+function truncateToRun(p: ParseResult, runStartMs: number, runMaxHours: number): ParseResult {
+  const cutoffMs = runStartMs + runMaxHours * 3600000;
+  const startAbsMs = absMs(p.startTimeISO, p.utcOffsetSec, 0);
+  const lastIdx = p.hours.findIndex((h) => startAbsMs + h * 3600000 > cutoffMs);
+  if (lastIdx === -1) return p;
+  const newHours = p.hours.slice(0, lastIdx);
+  const newArrays: Record<string, (number | null)[]> = {};
+  for (const k of Object.keys(p.arrays)) newArrays[k] = p.arrays[k].slice(0, lastIdx);
+  return { ...p, hours: newHours, arrays: newArrays };
+}
+
+/**
+ * Splice in extension data from a longer prior run. Both `latest` and `prior`
+ * are aligned by absolute UTC time. Returns the extended series plus the
+ * transition marker (hour relative to `latest.startTimeISO`).
+ */
+function spliceExtension(
+  latest: ParseResult,
+  latestRunLabel: string,
+  prior: CachedRun,
+  priorRunLabel: string,
+): { parsed: ParseResult; transition: RunTransition | null } {
+  const latestStartAbs = absMs(latest.startTimeISO, latest.utcOffsetSec, 0);
+  const priorStartAbs = absMs(prior.startTimeISO, prior.utcOffsetSec, 0);
+  const offsetH = Math.round((priorStartAbs - latestStartAbs) / 3600000);
+
+  // The last hour latest currently has
+  const latestLastHour = latest.hours[latest.hours.length - 1] ?? -1;
+  // The last hour the prior cache provides, expressed in latest's grid
+  const priorLastInLatest = (prior.hours[prior.hours.length - 1] ?? -1) + offsetH;
+  if (priorLastInLatest <= latestLastHour) {
+    return { parsed: latest, transition: null };
   }
 
-  return {
-    startTimeISO,
-    model: {
-      model: modelName,
-      color,
-      hours: trimmedHours,
-      temperature: arrays.temperature as number[],
-      precipitation: precip as number[],
-      precipitationTotal: precipTotal as number[],
-      windSpeed: arrays.windSpeed as number[],
-      windGusts: arrays.windGusts as number[],
-      pressure: arrays.pressure as number[],
-      humidity: arrays.humidity as number[],
-      dewPoint: arrays.dewPoint as number[],
-      cape: arrays.cape as number[],
-      temp850hPa: arrays.temp850hPa as number[],
-      temp500hPa: arrays.temp500hPa as number[],
-      apparentTemperature: arrays.apparentTemperature as number[],
-      cloudCover: arrays.cloudCover as number[],
-      snowfall: snow as number[],
-      snowDepth: arrays.snowDepth as number[],
-      windDirection: arrays.windDirection as number[],
-    },
+  // Build extended arrays
+  const newHours = latest.hours.slice();
+  const newArrays: Record<string, (number | null)[]> = {};
+  for (const k of Object.keys(latest.arrays)) newArrays[k] = latest.arrays[k].slice();
+
+  for (let h = latestLastHour + 1; h <= priorLastInLatest; h++) {
+    const priorIdx = h - offsetH;
+    const priorHourPos = prior.hours.indexOf(priorIdx);
+    if (priorHourPos === -1) continue;
+    newHours.push(h);
+    for (const k of Object.keys(newArrays)) {
+      const src = prior.arrays[k] ?? [];
+      newArrays[k].push(src[priorHourPos] ?? null);
+    }
+  }
+
+  if (newHours.length === latest.hours.length) {
+    return { parsed: latest, transition: null };
+  }
+
+  const transition: RunTransition = {
+    hour: latestLastHour + 1,
+    fromRun: latestRunLabel,
+    toRun: priorRunLabel,
   };
+  return { parsed: { ...latest, hours: newHours, arrays: newArrays }, transition };
+}
+
+async function fetchOneModel(
+  lat: number, lon: number, def: ModelConfig,
+): Promise<{ parsed: ParseResult; runLabel: string; runMaxHours: number; transitions: RunTransition[] } | null> {
+  let raw: ParseResult | null = null;
+  try {
+    const res = await fetch(buildApiUrl(lat, lon, def.id));
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    raw = parseRaw(await res.json());
+  } catch (e) {
+    console.warn(`Failed to fetch ${def.name}:`, e);
+    return null;
+  }
+  if (!raw) return null;
+
+  // Identify which run the fresh data represents
+  const cycles = pastRunCycles(def);
+  const active = cycles[0];
+  if (!active) return null;
+  const runLabel = formatRun(active.run.hour);
+
+  // Cap to the active run's promised horizon and our hard cap
+  const cappedMax = Math.min(active.run.maxHours, def.hardCapHours);
+  let truncated = truncateToRun(raw, active.runStartMs, cappedMax);
+
+  // Save to cache
+  const cache = loadCache(def.id, lat, lon);
+  const fresh: CachedRun = {
+    modelId: def.id,
+    runHour: active.run.hour,
+    runDateUTC: active.runDateUTC,
+    runMaxHours: cappedMax,
+    startTimeISO: truncated.startTimeISO,
+    utcOffsetSec: truncated.utcOffsetSec,
+    hours: truncated.hours,
+    arrays: truncated.arrays,
+    fetchedAt: Date.now(),
+  };
+  saveCache(def.id, lat, lon, [fresh, ...cache]);
+
+  // Look for a prior cached run that extends farther in absolute time.
+  // Pick the cached entry with the largest absolute end time (excluding "fresh" itself).
+  const candidates = [fresh, ...cache];
+  const withAbsEnd = candidates
+    .filter((c) => !(c.runDateUTC === active.runDateUTC && c.runHour === active.run.hour))
+    .map((c) => {
+      const startAbs = absMs(c.startTimeISO, c.utcOffsetSec, 0);
+      const endAbs = startAbs + (c.hours[c.hours.length - 1] ?? 0) * 3600000;
+      return { c, endAbs };
+    })
+    .sort((a, b) => b.endAbs - a.endAbs);
+
+  const transitions: RunTransition[] = [];
+  if (withAbsEnd.length > 0) {
+    const best = withAbsEnd[0];
+    const latestEndAbs = absMs(truncated.startTimeISO, truncated.utcOffsetSec, truncated.hours[truncated.hours.length - 1] ?? 0);
+    if (best.endAbs > latestEndAbs) {
+      const priorLabel = formatRun(best.c.runHour);
+      const result = spliceExtension(truncated, runLabel, best.c, priorLabel);
+      truncated = result.parsed;
+      if (result.transition) transitions.push(result.transition);
+    }
+  }
+
+  return { parsed: truncated, runLabel, runMaxHours: cappedMax, transitions };
+}
+
+function buildPrecipTotal(precip: (number | null)[]): number[] {
+  let acc = 0;
+  return precip.map((v) => { if (v != null) acc += v; return +acc.toFixed(2); });
 }
 
 async function fetchDirectFromOpenMeteo(lat: number, lon: number): Promise<FetchResult> {
-  const activeModels = getActiveModels();
-  const fetches = activeModels.map(async (cfg) => {
-    try {
-      const url = buildApiUrl(lat, lon, cfg.id);
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      const result = parseModelResponse(data, cfg.displayName, cfg.color);
-      // Update display name with actual forecast range
-      if (result) {
-        const maxH = result.model.hours[result.model.hours.length - 1];
-        result.model.model = `${cfg.name} (${formatRun(cfg.run)} · ${maxH}h)`;
-      }
-      return result;
-    } catch (e) {
-      console.warn(`Failed to fetch ${cfg.displayName}:`, e);
-      return null;
-    }
+  const results = await Promise.all(MODEL_DEFS.map((def) => fetchOneModel(lat, lon, def)));
+  const valid: Array<{
+    def: ModelConfig;
+    parsed: ParseResult;
+    runLabel: string;
+    runMaxHours: number;
+    transitions: RunTransition[];
+  }> = [];
+  for (let i = 0; i < results.length; i++) {
+    const r = results[i];
+    if (r) valid.push({ def: MODEL_DEFS[i], ...r });
+  }
+
+  if (valid.length === 0) {
+    return { models: [], startTime: new Date().toISOString() };
+  }
+
+  // Unified absolute-time grid based on earliest start
+  const startAbsList = valid.map((v) => absMs(v.parsed.startTimeISO, v.parsed.utcOffsetSec, 0));
+  const globalStartAbsMs = Math.min(...startAbsList);
+  const globalStartIso = new Date(globalStartAbsMs).toISOString();
+
+  let maxUnifiedHour = 0;
+  for (const v of valid) {
+    const offsetH = Math.round((absMs(v.parsed.startTimeISO, v.parsed.utcOffsetSec, 0) - globalStartAbsMs) / 3600000);
+    const last = (v.parsed.hours[v.parsed.hours.length - 1] ?? 0) + offsetH;
+    if (last > maxUnifiedHour) maxUnifiedHour = last;
+  }
+  const unifiedHours = Array.from({ length: maxUnifiedHour + 1 }, (_, i) => i);
+
+  const models: ModelForecast[] = valid.map((v) => {
+    const offsetH = Math.round((absMs(v.parsed.startTimeISO, v.parsed.utcOffsetSec, 0) - globalStartAbsMs) / 3600000);
+    const idxMap = new Map<number, number>();
+    v.parsed.hours.forEach((h, i) => idxMap.set(h + offsetH, i));
+    const realign = (arr: (number | null)[]): (number | null)[] =>
+      unifiedHours.map((h) => {
+        const i = idxMap.get(h);
+        return i == null ? null : arr[i] ?? null;
+      });
+
+    const realigned: Record<string, (number | null)[]> = {};
+    for (const k of Object.keys(v.parsed.arrays)) realigned[k] = realign(v.parsed.arrays[k]);
+    const precipTotal = buildPrecipTotal(realigned.precipitation);
+
+    const transitions = v.transitions.map((t) => ({ ...t, hour: t.hour + offsetH }));
+
+    return {
+      model: `${v.def.name} (${v.runLabel} · ${v.runMaxHours}h)`,
+      color: v.def.color,
+      hours: unifiedHours,
+      temperature: realigned.temperature as number[],
+      precipitation: realigned.precipitation as number[],
+      precipitationTotal: precipTotal,
+      windSpeed: realigned.windSpeed as number[],
+      windGusts: realigned.windGusts as number[],
+      pressure: realigned.pressure as number[],
+      humidity: realigned.humidity as number[],
+      dewPoint: realigned.dewPoint as number[],
+      cape: realigned.cape as number[],
+      temp850hPa: realigned.temp850hPa as number[],
+      temp500hPa: realigned.temp500hPa as number[],
+      apparentTemperature: realigned.apparentTemperature as number[],
+      cloudCover: realigned.cloudCover as number[],
+      snowfall: realigned.snowfall as number[],
+      snowDepth: realigned.snowDepth as number[],
+      windDirection: realigned.windDirection as number[],
+      runLabel: v.runLabel,
+      runMaxHours: v.runMaxHours,
+      transitions,
+    };
   });
 
-  const all = await Promise.all(fetches);
-  const valid = all.filter((r): r is ParseResult => r !== null && r.model.hours.length > 0);
-  const results = valid.map((r) => r.model);
-
-  // Align all models onto a unified absolute-time grid.
-  // Use the EARLIEST model start as t=0; pad earlier hours / extend tail to cover all models.
-  const fields: (keyof ModelForecast)[] = [
-    "temperature", "precipitation", "precipitationTotal", "windSpeed", "windGusts",
-    "pressure", "humidity", "dewPoint", "cape", "temp850hPa", "temp500hPa",
-    "apparentTemperature", "cloudCover", "snowfall", "snowDepth", "windDirection",
-  ];
-  let startTime = new Date().toISOString();
-  if (valid.length > 0) {
-    const startMsList = valid.map((v) => new Date(v.startTimeISO).getTime());
-    const globalStartMs = Math.min(...startMsList);
-    startTime = new Date(globalStartMs).toISOString();
-    // Compute global max absolute hour
-    let maxAbsHour = 0;
-    valid.forEach((v) => {
-      const offset = Math.round((new Date(v.startTimeISO).getTime() - globalStartMs) / 3600000);
-      const last = v.model.hours[v.model.hours.length - 1] + offset;
-      if (last > maxAbsHour) maxAbsHour = last;
-    });
-    const unifiedHours: number[] = [];
-    for (let h = 0; h <= maxAbsHour; h++) unifiedHours.push(h);
-
-    valid.forEach((v) => {
-      const r = v.model;
-      const offset = Math.round((new Date(v.startTimeISO).getTime() - globalStartMs) / 3600000);
-      // Build hour→index map for this model
-      const idxMap = new Map<number, number>();
-      r.hours.forEach((h, i) => idxMap.set(h + offset, i));
-      const realign = (arr: (number | null)[]): (number | null)[] =>
-        unifiedHours.map((h) => {
-          const i = idxMap.get(h);
-          return i == null ? null : arr[i] ?? null;
-        });
-      for (const f of fields) {
-        (r as any)[f] = realign((r as any)[f]);
-      }
-      r.hours = unifiedHours;
-    });
-  }
-
-  // Fetch air-quality once (UV/AQI from Open-Meteo).
   let airInfo: AirInfo | undefined;
-  if (results.length > 0) {
-    try {
-      airInfo = await fetchAirQuality(lat, lon, valid[0].startTimeISO);
-    } catch (e) {
-      console.warn("Failed to fetch air quality:", e);
-    }
+  try {
+    airInfo = await fetchAirQuality(lat, lon, valid[0].parsed.startTimeISO);
+  } catch (e) {
+    console.warn("Failed to fetch air quality:", e);
   }
 
-  return { models: results, startTime, airInfo };
+  return { models, startTime: globalStartIso, airInfo };
 }
 
 async function fetchAirQuality(lat: number, lon: number, startISO: string): Promise<AirInfo> {
-  // UV + European AQI from default Open-Meteo air-quality
-  const baseUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=european_aqi,uv_index&forecast_days=5&timezone=auto`;
-
-  const [baseRes] = await Promise.all([fetch(baseUrl)]);
-  if (!baseRes.ok) throw new Error(`Air-quality HTTP ${baseRes.status}`);
-  const data = await baseRes.json();
-
+  const url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=european_aqi,uv_index&forecast_days=5&timezone=auto`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Air-quality HTTP ${res.status}`);
+  const data = await res.json();
   const times: string[] = data?.hourly?.time ?? [];
   const aqiVals: (number | null)[] = data?.hourly?.european_aqi ?? [];
   const uvVals: (number | null)[] = data?.hourly?.uv_index ?? [];
@@ -455,14 +626,12 @@ async function fetchAirQuality(lat: number, lon: number, startISO: string): Prom
   const aqi: (number | null)[] = [];
   const uv: (number | null)[] = [];
   const hours: number[] = [];
-
   for (let i = 0; i < times.length; i++) {
     const h = Math.round((new Date(times[i]).getTime() - startMs) / 3600000);
     if (h < 0) continue;
     aqi[h] = aqiVals[i] ?? null;
     uv[h] = uvVals[i] ?? null;
   }
-
   const len = Math.max(aqi.length, uv.length);
   for (let i = 0; i < len; i++) {
     if (aqi[i] === undefined) aqi[i] = null;
@@ -472,16 +641,13 @@ async function fetchAirQuality(lat: number, lon: number, startISO: string): Prom
   return { hours, uvIndex: uv, aqi };
 }
 
-// ---------------------------------------------------------------------------
-// Public API — tries backend first, falls back to direct calls
-// ---------------------------------------------------------------------------
+// silence unused import for NUMERIC_FIELDS (kept exported-style for future use)
+void NUMERIC_FIELDS;
+
 export async function fetchWeatherData(lat: number, lon: number): Promise<FetchResult> {
   if (BACKEND_URL) {
-    try {
-      return await fetchFromBackend(lat, lon);
-    } catch (e) {
-      console.warn("Backend unavailable, falling back to direct Open-Meteo:", e);
-    }
+    try { return await fetchFromBackend(lat, lon); }
+    catch (e) { console.warn("Backend unavailable, falling back to direct Open-Meteo:", e); }
   }
   return fetchDirectFromOpenMeteo(lat, lon);
 }
