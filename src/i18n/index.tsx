@@ -78,7 +78,7 @@ const translations = {
     credits: "Credits",
     creditsTitle: "Credits & Data Sources",
     creditsIntro: "WeatherIntel relies on free, open data. Please respect each provider's licence.",
-    creditWeather: "Weather forecasts: Open-Meteo (CC BY 4.0) — ECMWF IFS, NOAA GFS, DWD ICON & ICON-EU.",
+    creditWeather: "Weather forecasts: Open-Meteo (CC BY 4.0) — ECMWF IFS, NOAA GFS, DWD ICON, ECCC GEM.",
     creditAir: "Air quality & UV: Open-Meteo Air Quality API powered by Copernicus CAMS Europe.",
     creditGeo: "Geocoding & reverse geocoding: Open-Meteo Geocoding and OpenStreetMap Nominatim (ODbL).",
     creditMap: "Map tiles: © OpenStreetMap contributors, tiles by CARTO (CC BY 3.0).",
