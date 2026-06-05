@@ -462,7 +462,7 @@ function spliceExtension(
 
 async function fetchOneModel(
   lat: number, lon: number, def: ModelConfig,
-): Promise<{ parsed: ParseResult; runLabel: string; runMaxHours: number; transitions: RunTransition[] } | null> {
+): Promise<{ parsed: ParseResult; runLabel: string; runMaxHours: number; transitions: RunTransition[]; runStartMs: number } | null> {
   let raw: ParseResult | null = null;
   try {
     const res = await fetch(buildApiUrl(lat, lon, def.id));
@@ -474,17 +474,14 @@ async function fetchOneModel(
   }
   if (!raw) return null;
 
-  // Identify which run the fresh data represents
   const cycles = pastRunCycles(def);
   const active = cycles[0];
   if (!active) return null;
   const runLabel = formatRun(active.run.hour);
 
-  // Cap to the active run's promised horizon and our hard cap
   const cappedMax = Math.min(active.run.maxHours, def.hardCapHours);
   let truncated = truncateToRun(raw, active.runStartMs, cappedMax);
 
-  // Save to cache
   const cache = loadCache(def.id, lat, lon);
   const fresh: CachedRun = {
     modelId: def.id,
@@ -499,8 +496,6 @@ async function fetchOneModel(
   };
   saveCache(def.id, lat, lon, [fresh, ...cache]);
 
-  // Look for a prior cached run that extends farther in absolute time.
-  // Pick the cached entry with the largest absolute end time (excluding "fresh" itself).
   const candidates = [fresh, ...cache];
   const withAbsEnd = candidates
     .filter((c) => !(c.runDateUTC === active.runDateUTC && c.runHour === active.run.hour))
@@ -523,7 +518,7 @@ async function fetchOneModel(
     }
   }
 
-  return { parsed: truncated, runLabel, runMaxHours: cappedMax, transitions };
+  return { parsed: truncated, runLabel, runMaxHours: cappedMax, transitions, runStartMs: active.runStartMs };
 }
 
 function buildPrecipTotal(precip: (number | null)[]): number[] {
