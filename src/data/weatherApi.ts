@@ -550,7 +550,14 @@ async function fetchDirectFromOpenMeteo(lat: number, lon: number): Promise<Fetch
   const ecmwf = valid.find((v) => v.def.id === "ecmwf_ifs025");
   const startAbsList = valid.map((v) => absMs(v.parsed.startTimeISO, v.parsed.utcOffsetSec, 0));
   const anchorAbsMs = ecmwf ? ecmwf.runStartMs : Math.min(...startAbsList);
-  const globalStartIso = new Date(anchorAbsMs).toISOString();
+  // Express anchor in the location's local-naive form (the rest of the app
+  // uses parseLocalNaiveISO and expects "YYYY-MM-DDTHH:mm" wall-clock).
+  const tzOffsetSec = valid[0].parsed.utcOffsetSec;
+  const anchorLocal = new Date(anchorAbsMs + tzOffsetSec * 1000);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const globalStartIso =
+    `${anchorLocal.getUTCFullYear()}-${pad(anchorLocal.getUTCMonth() + 1)}-${pad(anchorLocal.getUTCDate())}` +
+    `T${pad(anchorLocal.getUTCHours())}:${pad(anchorLocal.getUTCMinutes())}`;
 
   // Cap entire timeline to 360h from anchor (longest model horizon).
   const GLOBAL_CAP_H = 360;
