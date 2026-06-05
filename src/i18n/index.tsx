@@ -85,6 +85,10 @@ const translations = {
     creditIcons: "Icons: Lucide (ISC licence).",
     creditWarnings: "Weather warnings: NOAA / NWS, NOAA SPC convective outlooks, EUMETNET MeteoAlarm.",
     creditDisclaimer: "Forecast data is provided as-is, with no warranty. Not for safety-critical use.",
+    noaaOutlooksTitle: "NOAA Outlooks",
+    noaaOutlooksSubtitle: "Live convective and tropical outlooks straight from NOAA SPC and NHC.",
+    spcOutlooks: "SPC Convective Outlooks",
+    nhcOutlooks: "NHC Tropical Outlooks",
   },
   el: {
     appName: "WeatherIntel",
@@ -168,6 +172,10 @@ const translations = {
     creditIcons: "Εικονίδια: Lucide (άδεια ISC).",
     creditWarnings: "Προειδοποιήσεις καιρού: NOAA / NWS, προοπτικές SPC, EUMETNET MeteoAlarm.",
     creditDisclaimer: "Τα δεδομένα παρέχονται ως έχουν, χωρίς εγγύηση. Όχι για κρίσιμη χρήση ασφάλειας.",
+    noaaOutlooksTitle: "Προοπτικές NOAA",
+    noaaOutlooksSubtitle: "Ζωντανές προοπτικές καταιγίδων και τροπικών από NOAA SPC και NHC.",
+    spcOutlooks: "Προοπτικές Καταιγίδων SPC",
+    nhcOutlooks: "Τροπικές Προοπτικές NHC",
   },
 } as const;
 

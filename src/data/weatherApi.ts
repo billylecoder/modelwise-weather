@@ -462,7 +462,7 @@ function spliceExtension(
 
 async function fetchOneModel(
   lat: number, lon: number, def: ModelConfig,
-): Promise<{ parsed: ParseResult; runLabel: string; runMaxHours: number; transitions: RunTransition[] } | null> {
+): Promise<{ parsed: ParseResult; runLabel: string; runMaxHours: number; transitions: RunTransition[]; runStartMs: number } | null> {
   let raw: ParseResult | null = null;
   try {
     const res = await fetch(buildApiUrl(lat, lon, def.id));
@@ -474,17 +474,14 @@ async function fetchOneModel(
   }
   if (!raw) return null;
 
-  // Identify which run the fresh data represents
   const cycles = pastRunCycles(def);
   const active = cycles[0];
   if (!active) return null;
   const runLabel = formatRun(active.run.hour);
 
-  // Cap to the active run's promised horizon and our hard cap
   const cappedMax = Math.min(active.run.maxHours, def.hardCapHours);
   let truncated = truncateToRun(raw, active.runStartMs, cappedMax);
 
-  // Save to cache
   const cache = loadCache(def.id, lat, lon);
   const fresh: CachedRun = {
     modelId: def.id,
@@ -499,8 +496,6 @@ async function fetchOneModel(
   };
   saveCache(def.id, lat, lon, [fresh, ...cache]);
 
-  // Look for a prior cached run that extends farther in absolute time.
-  // Pick the cached entry with the largest absolute end time (excluding "fresh" itself).
   const candidates = [fresh, ...cache];
   const withAbsEnd = candidates
     .filter((c) => !(c.runDateUTC === active.runDateUTC && c.runHour === active.run.hour))
@@ -523,7 +518,7 @@ async function fetchOneModel(
     }
   }
 
-  return { parsed: truncated, runLabel, runMaxHours: cappedMax, transitions };
+  return { parsed: truncated, runLabel, runMaxHours: cappedMax, transitions, runStartMs: active.runStartMs };
 }
 
 function buildPrecipTotal(precip: (number | null)[]): number[] {
@@ -539,6 +534,7 @@ async function fetchDirectFromOpenMeteo(lat: number, lon: number): Promise<Fetch
     runLabel: string;
     runMaxHours: number;
     transitions: RunTransition[];
+    runStartMs: number;
   }> = [];
   for (let i = 0; i < results.length; i++) {
     const r = results[i];
@@ -549,25 +545,42 @@ async function fetchDirectFromOpenMeteo(lat: number, lon: number): Promise<Fetch
     return { models: [], startTime: new Date().toISOString() };
   }
 
-  // Unified absolute-time grid based on earliest start
+  // Anchor the unified timeline to ECMWF's latest run start time (UTC).
+  // Falls back to the earliest model start if ECMWF is unavailable.
+  const ecmwf = valid.find((v) => v.def.id === "ecmwf_ifs025");
   const startAbsList = valid.map((v) => absMs(v.parsed.startTimeISO, v.parsed.utcOffsetSec, 0));
-  const globalStartAbsMs = Math.min(...startAbsList);
-  const globalStartIso = new Date(globalStartAbsMs).toISOString();
+  const anchorAbsMs = ecmwf ? ecmwf.runStartMs : Math.min(...startAbsList);
+  // Express anchor in the location's local-naive form (the rest of the app
+  // uses parseLocalNaiveISO and expects "YYYY-MM-DDTHH:mm" wall-clock).
+  const tzOffsetSec = valid[0].parsed.utcOffsetSec;
+  const anchorLocal = new Date(anchorAbsMs + tzOffsetSec * 1000);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const globalStartIso =
+    `${anchorLocal.getUTCFullYear()}-${pad(anchorLocal.getUTCMonth() + 1)}-${pad(anchorLocal.getUTCDate())}` +
+    `T${pad(anchorLocal.getUTCHours())}:${pad(anchorLocal.getUTCMinutes())}`;
 
+  // Cap entire timeline to 360h from anchor (longest model horizon).
+  const GLOBAL_CAP_H = 360;
   let maxUnifiedHour = 0;
   for (const v of valid) {
-    const offsetH = Math.round((absMs(v.parsed.startTimeISO, v.parsed.utcOffsetSec, 0) - globalStartAbsMs) / 3600000);
+    const offsetH = Math.round((absMs(v.parsed.startTimeISO, v.parsed.utcOffsetSec, 0) - anchorAbsMs) / 3600000);
     const last = (v.parsed.hours[v.parsed.hours.length - 1] ?? 0) + offsetH;
-    if (last > maxUnifiedHour) maxUnifiedHour = last;
+    // Per-model cap from anchor = model.hardCapHours (model runs measured from ECMWF anchor)
+    const cappedLast = Math.min(last, v.def.hardCapHours);
+    if (cappedLast > maxUnifiedHour) maxUnifiedHour = cappedLast;
   }
+  maxUnifiedHour = Math.min(maxUnifiedHour, GLOBAL_CAP_H);
+  if (maxUnifiedHour < 0) maxUnifiedHour = 0;
   const unifiedHours = Array.from({ length: maxUnifiedHour + 1 }, (_, i) => i);
 
   const models: ModelForecast[] = valid.map((v) => {
-    const offsetH = Math.round((absMs(v.parsed.startTimeISO, v.parsed.utcOffsetSec, 0) - globalStartAbsMs) / 3600000);
+    const offsetH = Math.round((absMs(v.parsed.startTimeISO, v.parsed.utcOffsetSec, 0) - anchorAbsMs) / 3600000);
     const idxMap = new Map<number, number>();
     v.parsed.hours.forEach((h, i) => idxMap.set(h + offsetH, i));
+    const modelMaxHour = Math.min(v.def.hardCapHours, maxUnifiedHour);
     const realign = (arr: (number | null)[]): (number | null)[] =>
       unifiedHours.map((h) => {
+        if (h < 0 || h > modelMaxHour) return null;
         const i = idxMap.get(h);
         return i == null ? null : arr[i] ?? null;
       });
@@ -576,7 +589,9 @@ async function fetchDirectFromOpenMeteo(lat: number, lon: number): Promise<Fetch
     for (const k of Object.keys(v.parsed.arrays)) realigned[k] = realign(v.parsed.arrays[k]);
     const precipTotal = buildPrecipTotal(realigned.precipitation);
 
-    const transitions = v.transitions.map((t) => ({ ...t, hour: t.hour + offsetH }));
+    const transitions = v.transitions
+      .map((t) => ({ ...t, hour: t.hour + offsetH }))
+      .filter((t) => t.hour >= 0 && t.hour <= maxUnifiedHour);
 
     return {
       model: `${v.def.name} (${v.runLabel} · ${v.runMaxHours}h)`,
@@ -606,7 +621,7 @@ async function fetchDirectFromOpenMeteo(lat: number, lon: number): Promise<Fetch
 
   let airInfo: AirInfo | undefined;
   try {
-    airInfo = await fetchAirQuality(lat, lon, valid[0].parsed.startTimeISO);
+    airInfo = await fetchAirQuality(lat, lon, globalStartIso);
   } catch (e) {
     console.warn("Failed to fetch air quality:", e);
   }
