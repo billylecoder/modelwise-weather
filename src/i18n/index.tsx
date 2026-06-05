@@ -85,6 +85,10 @@ const translations = {
     creditIcons: "Icons: Lucide (ISC licence).",
     creditWarnings: "Weather warnings: NOAA / NWS, NOAA SPC convective outlooks, EUMETNET MeteoAlarm.",
     creditDisclaimer: "Forecast data is provided as-is, with no warranty. Not for safety-critical use.",
+    noaaOutlooksTitle: "NOAA Outlooks",
+    noaaOutlooksSubtitle: "Live convective and tropical outlooks straight from NOAA SPC and NHC.",
+    spcOutlooks: "SPC Convective Outlooks",
+    nhcOutlooks: "NHC Tropical Outlooks",
   },
   el: {
     appName: "WeatherIntel",
