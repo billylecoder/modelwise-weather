@@ -17,6 +17,7 @@ import SettingsPanel from "@/components/SettingsPanel";
 import InfoTab from "@/components/InfoTab";
 import WarningsBanner from "@/components/WarningsBanner";
 import WarningsTab from "@/components/WarningsTab";
+import NoaaOutlooks from "@/components/NoaaOutlooks";
 import CreditsFooter from "@/components/CreditsFooter";
 import { useI18n, paramTranslationKey } from "@/i18n";
 
