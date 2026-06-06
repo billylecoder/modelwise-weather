@@ -76,7 +76,7 @@ function OutlookGrid({ cards, bust }: { cards: OutlookCard[]; bust: number }) {
               alt={c.alt}
               loading="lazy"
               referrerPolicy="no-referrer"
-              className="w-full h-full object-contain"
+              className="w-full h-full object-cover"
             />
           </div>
           <div className="flex items-center justify-between px-3 py-2 text-xs">
