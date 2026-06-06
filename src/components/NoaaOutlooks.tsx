@@ -19,22 +19,26 @@ interface OutlookCard {
   alt: string;
 }
 
+// SPC's own GIFs are no longer hot-linkable (CloudFront returns 403).
+// Iowa Environmental Mesonet (IEM) renders the live SPC outlooks as PNGs
+// from the same underlying shapefiles, and explicitly allows reuse.
+const IEM_BASE = "https://mesonet.agron.iastate.edu/plotting/auto/plot/220";
 const SPC_CARDS: OutlookCard[] = [
   {
     title: "Day 1 Convective Outlook",
-    img: "https://www.spc.noaa.gov/products/outlook/day1otlk.gif",
+    img: `${IEM_BASE}/cat:categorical::csector:conus::which:1C.png`,
     href: "https://www.spc.noaa.gov/products/outlook/day1otlk.html",
     alt: "SPC Day 1 Convective Outlook",
   },
   {
     title: "Day 2 Convective Outlook",
-    img: "https://www.spc.noaa.gov/products/outlook/day2otlk.gif",
+    img: `${IEM_BASE}/cat:categorical::csector:conus::which:2C.png`,
     href: "https://www.spc.noaa.gov/products/outlook/day2otlk.html",
     alt: "SPC Day 2 Convective Outlook",
   },
   {
     title: "Day 3 Convective Outlook",
-    img: "https://www.spc.noaa.gov/products/outlook/day3otlk.gif",
+    img: `${IEM_BASE}/cat:categorical::csector:conus::which:3C.png`,
     href: "https://www.spc.noaa.gov/products/outlook/day3otlk.html",
     alt: "SPC Day 3 Convective Outlook",
   },
