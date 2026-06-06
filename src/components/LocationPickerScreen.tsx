@@ -201,6 +201,8 @@ export default function LocationPickerScreen({ onSelect }: Props) {
             </div>
           )}
         </div>
+
+        <NoaaOutlooks />
       </div>
     </div>
   );
