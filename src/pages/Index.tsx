@@ -284,7 +284,6 @@ const Index = () => {
               </div>
             </div>
 
-            <NoaaOutlooks />
           </>
         )}
 
