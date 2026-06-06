@@ -42,16 +42,16 @@ const SPC_CARDS: OutlookCard[] = [
 
 const NHC_CARDS: OutlookCard[] = [
   {
-    title: "Atlantic — 5-Day Tropical Outlook",
-    img: "https://www.nhc.noaa.gov/xgtwo/two_atl_5d0.png",
-    href: "https://www.nhc.noaa.gov/gtwo.php?basin=atlc&fdays=5",
-    alt: "NHC Atlantic 5-Day Tropical Weather Outlook",
+    title: "Atlantic — 7-Day Tropical Outlook",
+    img: "https://www.nhc.noaa.gov/xgtwo/two_atl_7d0.png",
+    href: "https://www.nhc.noaa.gov/gtwo.php?basin=atlc&fdays=7",
+    alt: "NHC Atlantic 7-Day Tropical Weather Outlook",
   },
   {
-    title: "East Pacific — 5-Day Tropical Outlook",
-    img: "https://www.nhc.noaa.gov/xgtwo/two_pac_5d0.png",
-    href: "https://www.nhc.noaa.gov/gtwo.php?basin=epac&fdays=5",
-    alt: "NHC Eastern Pacific 5-Day Tropical Weather Outlook",
+    title: "East Pacific — 7-Day Tropical Outlook",
+    img: "https://www.nhc.noaa.gov/xgtwo/two_pac_7d0.png",
+    href: "https://www.nhc.noaa.gov/gtwo.php?basin=epac&fdays=7",
+    alt: "NHC Eastern Pacific 7-Day Tropical Weather Outlook",
   },
 ];
 
@@ -87,9 +87,9 @@ function OutlookGrid({ cards, bust }: { cards: OutlookCard[]; bust: number }) {
 
 export default function NoaaOutlooks() {
   const { t } = useI18n();
-  const [bust, setBust] = useState(() => Math.floor(Date.now() / 600000));
+  const [bust, setBust] = useState(() => Date.now());
 
-  const refresh = () => setBust(Math.floor(Date.now() / 1000));
+  const refresh = () => setBust(Date.now());
 
   return (
     <section className="glass-card rounded-xl p-5 space-y-5">

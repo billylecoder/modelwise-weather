@@ -3,6 +3,7 @@ import { Search, MapPin, Loader2, Navigation, Cloud } from "lucide-react";
 import { Location } from "@/data/weatherApi";
 import { useI18n } from "@/i18n";
 import LocationMap from "@/components/LocationMap";
+import NoaaOutlooks from "@/components/NoaaOutlooks";
 
 interface GeoResult {
   id: number;
@@ -119,8 +120,8 @@ export default function LocationPickerScreen({ onSelect }: Props) {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4 py-8">
-      <div className="w-full max-w-2xl space-y-6">
+    <div className="min-h-screen bg-background flex items-start justify-center px-4 py-8">
+      <div className="w-full max-w-4xl space-y-6">
         <div className="text-center space-y-2">
           <div className="w-12 h-12 rounded-2xl gradient-primary flex items-center justify-center glow-primary mx-auto">
             <Cloud className="w-6 h-6 text-primary-foreground" />
@@ -200,6 +201,8 @@ export default function LocationPickerScreen({ onSelect }: Props) {
             </div>
           )}
         </div>
+
+        <NoaaOutlooks />
       </div>
     </div>
   );
