@@ -87,9 +87,9 @@ function OutlookGrid({ cards, bust }: { cards: OutlookCard[]; bust: number }) {
 
 export default function NoaaOutlooks() {
   const { t } = useI18n();
-  const [bust, setBust] = useState(() => Math.floor(Date.now() / 600000));
+  const [bust, setBust] = useState(() => Date.now());
 
-  const refresh = () => setBust(Math.floor(Date.now() / 1000));
+  const refresh = () => setBust(Date.now());
 
   return (
     <section className="glass-card rounded-xl p-5 space-y-5">
