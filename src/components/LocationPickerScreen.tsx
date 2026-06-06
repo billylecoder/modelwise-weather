@@ -3,6 +3,7 @@ import { Search, MapPin, Loader2, Navigation, Cloud } from "lucide-react";
 import { Location } from "@/data/weatherApi";
 import { useI18n } from "@/i18n";
 import LocationMap from "@/components/LocationMap";
+import NoaaOutlooks from "@/components/NoaaOutlooks";
 
 interface GeoResult {
   id: number;
