@@ -59,6 +59,28 @@ const NHC_CARDS: OutlookCard[] = [
   },
 ];
 
+// General climate / global ocean state — current imagery from NOAA CPC + OSPO + NSIDC.
+const CLIMATE_CARDS: OutlookCard[] = [
+  {
+    title: "ENSO — Niño 3.4 SST Index",
+    img: "https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/enso_advisory/figures/figure1.png",
+    href: "https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/enso_advisory/ensodisc.shtml",
+    alt: "Current El Niño / La Niña status — Niño 3.4 SST anomaly index",
+  },
+  {
+    title: "Global Sea Surface Temperature Anomaly",
+    img: "https://www.ospo.noaa.gov/data/sst/anomaly/anomnight.current.gif",
+    href: "https://www.ospo.noaa.gov/data/sst/anomaly/",
+    alt: "NOAA global SST anomaly — most recent nightly composite",
+  },
+  {
+    title: "MJO — Wheeler-Hendon Phase Diagram",
+    img: "https://www.cpc.ncep.noaa.gov/products/precip/CWlink/MJO/CLIVAR/clivar_wh.gif",
+    href: "https://www.cpc.ncep.noaa.gov/products/precip/CWlink/MJO/whindex.shtml",
+    alt: "Madden-Julian Oscillation Wheeler-Hendon phase-space diagram",
+  },
+];
+
 function OutlookGrid({ cards, bust }: { cards: OutlookCard[]; bust: number }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
