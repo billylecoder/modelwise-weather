@@ -27,6 +27,14 @@ export interface ModelForecast {
   snowfall: number[];
   snowDepth: number[];
   windDirection: number[];
+  // Lightning + severe-weather parameters (may be null for models that don't expose them)
+  lightning?: (number | null)[];
+  liftedIndex?: (number | null)[];
+  cin?: (number | null)[];
+  shear0_1km?: (number | null)[];
+  shear0_3km?: (number | null)[];
+  shear0_6km?: (number | null)[];
+  freezingLevel?: (number | null)[];
   /** Latest run cycle used for the leading portion of the data (e.g. "06z"). */
   runLabel?: string;
   /** Run-cycle max forecast hours, e.g. 144 for ECMWF 06z. */
@@ -34,6 +42,7 @@ export interface ModelForecast {
   /** Hours at which the underlying run source changes (cached older but longer run takes over). */
   transitions?: RunTransition[];
 }
+
 
 export interface AirInfo {
   hours: number[];
@@ -71,7 +80,14 @@ export type WeatherParam =
   | "cloudCover"
   | "snowfall"
   | "snowDepth"
-  | "windDirection";
+  | "windDirection"
+  | "lightning"
+  | "liftedIndex"
+  | "cin"
+  | "shear0_1km"
+  | "shear0_3km"
+  | "shear0_6km"
+  | "freezingLevel";
 
 export const parameterConfig: Record<WeatherParam, { label: string; unit: string; icon: string }> = {
   temperature: { label: "Temperature", unit: "°C", icon: "Thermometer" },
@@ -90,7 +106,15 @@ export const parameterConfig: Record<WeatherParam, { label: string; unit: string
   snowfall: { label: "New Snow", unit: "cm", icon: "Snowflake" },
   snowDepth: { label: "Snow Depth", unit: "cm", icon: "Snowflake" },
   windDirection: { label: "Wind Direction", unit: "°", icon: "Compass" },
+  lightning: { label: "Lightning Pot.", unit: "J/kg", icon: "Zap" },
+  liftedIndex: { label: "Lifted Index", unit: "K", icon: "Thermometer" },
+  cin: { label: "CIN", unit: "J/kg", icon: "Zap" },
+  shear0_1km: { label: "0–1km Shear", unit: "km/h", icon: "Wind" },
+  shear0_3km: { label: "0–3km Shear", unit: "km/h", icon: "Wind" },
+  shear0_6km: { label: "0–6km Shear", unit: "km/h", icon: "Wind" },
+  freezingLevel: { label: "Freezing Lvl", unit: "m", icon: "Snowflake" },
 };
+
 
 // ---------------------------------------------------------------------------
 // Model run schedules
@@ -261,7 +285,19 @@ const HOURLY_PARAMS = [
   "wind_direction_10m",
   "weather_code",
   "visibility",
+  // Severe / lightning parameters (some models won't return these — values will be null)
+  "lightning_potential",
+  "lifted_index",
+  "convective_inhibition",
+  "freezing_level_height",
+  "wind_speed_925hPa",
+  "wind_direction_925hPa",
+  "wind_speed_700hPa",
+  "wind_direction_700hPa",
+  "wind_speed_500hPa",
+  "wind_direction_500hPa",
 ];
+
 
 const NUMERIC_FIELDS: (keyof ModelForecast)[] = [
   "temperature", "precipitation", "precipitationTotal", "windSpeed", "windGusts",
@@ -312,6 +348,18 @@ function parseRaw(data: any): ParseResult | null {
     temperature: [], precipitation: [], windSpeed: [], windGusts: [],
     pressure: [], humidity: [], dewPoint: [], cape: [], temp850hPa: [], temp500hPa: [],
     apparentTemperature: [], cloudCover: [], snowfall: [], snowDepth: [], windDirection: [],
+    lightning: [], liftedIndex: [], cin: [], freezingLevel: [],
+    shear0_1km: [], shear0_3km: [], shear0_6km: [],
+  };
+
+  // Bulk shear magnitude (km/h) between two wind layers (speed + direction).
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const shearMag = (s1: number | null | undefined, d1: number | null | undefined,
+                    s2: number | null | undefined, d2: number | null | undefined): number | null => {
+    if (s1 == null || d1 == null || s2 == null || d2 == null) return null;
+    const u1 = s1 * Math.sin(toRad(d1)), v1 = s1 * Math.cos(toRad(d1));
+    const u2 = s2 * Math.sin(toRad(d2)), v2 = s2 * Math.cos(toRad(d2));
+    return Math.sqrt((u1 - u2) ** 2 + (v1 - v2) ** 2);
   };
 
   for (let i = 0; i < hourly.time.length; i++) {
@@ -332,6 +380,22 @@ function parseRaw(data: any): ParseResult | null {
     const s = arr("snowfall")[i]; out.snowfall.push(s == null ? null : Math.max(0, s));
     const sd = arr("snow_depth")[i]; out.snowDepth.push(sd == null ? null : Math.max(0, sd * 100));
     const wd = arr("wind_direction_10m")[i]; out.windDirection.push(wd == null ? null : ((wd % 360) + 360) % 360);
+
+    const lp = arr("lightning_potential")[i];
+    out.lightning.push(lp == null ? null : Math.max(0, lp));
+    out.liftedIndex.push(arr("lifted_index")[i] ?? null);
+    const ci = arr("convective_inhibition")[i];
+    out.cin.push(ci == null ? null : ci);
+    const fl = arr("freezing_level_height")[i];
+    out.freezingLevel.push(fl == null ? null : Math.max(0, fl));
+
+    const ws10 = arr("wind_speed_10m")[i], wd10 = arr("wind_direction_10m")[i];
+    const ws925 = arr("wind_speed_925hPa")[i], wd925 = arr("wind_direction_925hPa")[i];
+    const ws700 = arr("wind_speed_700hPa")[i], wd700 = arr("wind_direction_700hPa")[i];
+    const ws500 = arr("wind_speed_500hPa")[i], wd500 = arr("wind_direction_500hPa")[i];
+    out.shear0_1km.push(shearMag(ws10, wd10, ws925, wd925));
+    out.shear0_3km.push(shearMag(ws10, wd10, ws700, wd700));
+    out.shear0_6km.push(shearMag(ws10, wd10, ws500, wd500));
   }
 
   // Trim trailing nulls based on temperature
@@ -346,6 +410,7 @@ function parseRaw(data: any): ParseResult | null {
 
   return { startTimeISO, utcOffsetSec, hours: hoursT, arrays: out };
 }
+
 
 // ---------------------------------------------------------------------------
 // LocalStorage cache for run cycles. Lets us splice in a longer prior run
@@ -613,6 +678,13 @@ async function fetchDirectFromOpenMeteo(lat: number, lon: number): Promise<Fetch
       snowfall: realigned.snowfall as number[],
       snowDepth: realigned.snowDepth as number[],
       windDirection: realigned.windDirection as number[],
+      lightning: realigned.lightning,
+      liftedIndex: realigned.liftedIndex,
+      cin: realigned.cin,
+      shear0_1km: realigned.shear0_1km,
+      shear0_3km: realigned.shear0_3km,
+      shear0_6km: realigned.shear0_6km,
+      freezingLevel: realigned.freezingLevel,
       runLabel: v.runLabel,
       runMaxHours: v.runMaxHours,
       transitions,

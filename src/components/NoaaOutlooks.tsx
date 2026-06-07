@@ -59,6 +59,28 @@ const NHC_CARDS: OutlookCard[] = [
   },
 ];
 
+// General climate / global ocean state — current imagery from NOAA CPC + OSPO + NSIDC.
+const CLIMATE_CARDS: OutlookCard[] = [
+  {
+    title: "ENSO — Niño 3.4 SST Index",
+    img: "https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/enso_advisory/figures/figure1.png",
+    href: "https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/enso_advisory/ensodisc.shtml",
+    alt: "Current El Niño / La Niña status — Niño 3.4 SST anomaly index",
+  },
+  {
+    title: "Global Sea Surface Temperature Anomaly",
+    img: "https://www.ospo.noaa.gov/data/sst/anomaly/anomnight.current.gif",
+    href: "https://www.ospo.noaa.gov/data/sst/anomaly/",
+    alt: "NOAA global SST anomaly — most recent nightly composite",
+  },
+  {
+    title: "MJO — Wheeler-Hendon Phase Diagram",
+    img: "https://www.cpc.ncep.noaa.gov/products/precip/CWlink/MJO/CLIVAR/clivar_wh.gif",
+    href: "https://www.cpc.ncep.noaa.gov/products/precip/CWlink/MJO/whindex.shtml",
+    alt: "Madden-Julian Oscillation Wheeler-Hendon phase-space diagram",
+  },
+];
+
 function OutlookGrid({ cards, bust }: { cards: OutlookCard[]; bust: number }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -145,6 +167,23 @@ export default function NoaaOutlooks() {
           </a>
         </div>
         <OutlookGrid cards={NHC_CARDS} bust={bust} />
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <h3 className="font-heading font-medium text-xs uppercase tracking-wide text-muted-foreground">
+            Climate & Global Conditions
+          </h3>
+          <a
+            href="https://www.cpc.ncep.noaa.gov/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[11px] text-primary hover:underline flex items-center gap-1"
+          >
+            cpc.ncep.noaa.gov <ExternalLink className="w-3 h-3" />
+          </a>
+        </div>
+        <OutlookGrid cards={CLIMATE_CARDS} bust={bust} />
       </div>
     </section>
   );

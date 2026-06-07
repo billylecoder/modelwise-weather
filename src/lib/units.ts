@@ -47,6 +47,9 @@ export function getCategory(param: WeatherParam): UnitCategory {
       return "precipitation";
     case "windSpeed":
     case "windGusts":
+    case "shear0_1km":
+    case "shear0_3km":
+    case "shear0_6km":
       return "wind";
     case "pressure":
       return "pressure";

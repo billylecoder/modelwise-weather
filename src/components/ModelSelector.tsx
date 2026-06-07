@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ModelForecast, parameterConfig, WeatherParam } from "@/data/weatherApi";
-import { Thermometer, CloudRain, Snowflake, Wind, Gauge, Droplets, Zap, Cloud, Sun, Compass, ChevronDown, ChevronUp } from "lucide-react";
+import { Thermometer, CloudRain, Snowflake, Wind, Gauge, Droplets, Zap, Cloud, Sun, Compass } from "lucide-react";
 import { useI18n, paramTranslationKey } from "@/i18n";
 import { useUnits } from "@/contexts/UnitsContext";
 import { formatValue, getUnitLabel } from "@/lib/units";
@@ -14,7 +14,10 @@ const BASIC_PARAMS: WeatherParam[] = [
   "temperature", "apparentTemperature", "precipitation", "windSpeed", "humidity", "cloudCover", "snowfall", "windDirection",
 ];
 const ADVANCED_PARAMS: WeatherParam[] = [
-  "precipitationTotal", "windGusts", "pressure", "dewPoint", "cape", "temp850hPa", "temp500hPa", "snowDepth",
+  "precipitationTotal", "windGusts", "pressure", "dewPoint", "cape", "lightning", "temp850hPa", "temp500hPa", "snowDepth",
+];
+const SEVERE_PARAMS: WeatherParam[] = [
+  "cape", "lightning", "liftedIndex", "cin", "shear0_1km", "shear0_3km", "shear0_6km", "freezingLevel",
 ];
 
 interface ModelSelectorProps {
@@ -27,7 +30,7 @@ interface ModelSelectorProps {
 const ModelSelector = ({ models, selectedModel, onSelectModel, forecastHour }: ModelSelectorProps) => {
   const { t } = useI18n();
   const { units } = useUnits();
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [view, setView] = useState<"basic" | "advanced" | "severe">("basic");
 
   if (!models || models.length === 0) {
     return (
@@ -134,20 +137,33 @@ const ModelSelector = ({ models, selectedModel, onSelectModel, forecastHour }: M
         </div>
       )}
 
-      {/* Basic parameters */}
-      {renderParams(BASIC_PARAMS)}
+      {/* View tabs: Basic / Advanced / Severe */}
+      <div className="flex gap-1.5 justify-center">
+        {([
+          { id: "basic" as const, label: t("basic") },
+          { id: "advanced" as const, label: t("advanced") },
+          { id: "severe" as const, label: "Severe" },
+        ]).map((tab) => {
+          const active = view === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setView(tab.id)}
+              className={`px-3 py-1 rounded-md text-[11px] font-body font-medium transition-colors ${
+                active
+                  ? "bg-primary/15 text-primary border border-primary/30"
+                  : "text-muted-foreground hover:text-foreground border border-transparent"
+              }`}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
 
-      {/* Advanced toggle */}
-      <button
-        onClick={() => setShowAdvanced(!showAdvanced)}
-        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors font-body mx-auto"
-      >
-        {showAdvanced ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-        {showAdvanced ? t("basic") : t("advanced")}
-      </button>
-
-      {/* Advanced parameters */}
-      {showAdvanced && renderParams(ADVANCED_PARAMS)}
+      {view === "basic" && renderParams(BASIC_PARAMS)}
+      {view === "advanced" && renderParams(ADVANCED_PARAMS)}
+      {view === "severe" && renderParams(SEVERE_PARAMS)}
     </div>
   );
 };
