@@ -14,7 +14,10 @@ const BASIC_PARAMS: WeatherParam[] = [
   "temperature", "apparentTemperature", "precipitation", "windSpeed", "humidity", "cloudCover", "snowfall", "windDirection",
 ];
 const ADVANCED_PARAMS: WeatherParam[] = [
-  "precipitationTotal", "windGusts", "pressure", "dewPoint", "cape", "temp850hPa", "temp500hPa", "snowDepth",
+  "precipitationTotal", "windGusts", "pressure", "dewPoint", "cape", "lightning", "temp850hPa", "temp500hPa", "snowDepth",
+];
+const SEVERE_PARAMS: WeatherParam[] = [
+  "cape", "lightning", "liftedIndex", "cin", "shear0_1km", "shear0_3km", "shear0_6km", "freezingLevel",
 ];
 
 interface ModelSelectorProps {
@@ -27,7 +30,7 @@ interface ModelSelectorProps {
 const ModelSelector = ({ models, selectedModel, onSelectModel, forecastHour }: ModelSelectorProps) => {
   const { t } = useI18n();
   const { units } = useUnits();
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [view, setView] = useState<"basic" | "advanced" | "severe">("basic");
 
   if (!models || models.length === 0) {
     return (
