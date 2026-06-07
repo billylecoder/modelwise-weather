@@ -137,20 +137,33 @@ const ModelSelector = ({ models, selectedModel, onSelectModel, forecastHour }: M
         </div>
       )}
 
-      {/* Basic parameters */}
-      {renderParams(BASIC_PARAMS)}
+      {/* View tabs: Basic / Advanced / Severe */}
+      <div className="flex gap-1.5 justify-center">
+        {([
+          { id: "basic" as const, label: t("basic") },
+          { id: "advanced" as const, label: t("advanced") },
+          { id: "severe" as const, label: "Severe" },
+        ]).map((tab) => {
+          const active = view === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setView(tab.id)}
+              className={`px-3 py-1 rounded-md text-[11px] font-body font-medium transition-colors ${
+                active
+                  ? "bg-primary/15 text-primary border border-primary/30"
+                  : "text-muted-foreground hover:text-foreground border border-transparent"
+              }`}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
 
-      {/* Advanced toggle */}
-      <button
-        onClick={() => setShowAdvanced(!showAdvanced)}
-        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors font-body mx-auto"
-      >
-        {showAdvanced ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-        {showAdvanced ? t("basic") : t("advanced")}
-      </button>
-
-      {/* Advanced parameters */}
-      {showAdvanced && renderParams(ADVANCED_PARAMS)}
+      {view === "basic" && renderParams(BASIC_PARAMS)}
+      {view === "advanced" && renderParams(ADVANCED_PARAMS)}
+      {view === "severe" && renderParams(SEVERE_PARAMS)}
     </div>
   );
 };
