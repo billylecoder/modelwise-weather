@@ -77,9 +77,11 @@ export default function LocationPickerScreen({ onSelect }: Props) {
       return;
     }
     if (trimmed.length < 2) { setResults([]); setError(null); return; }
+    // Skip re-searching when query matches the already-selected pin (e.g. after picking a result)
+    if (pin && trimmed === pin.name) { setResults([]); setError(null); return; }
     debounceRef.current = setTimeout(() => search(query), 300);
     return () => clearTimeout(debounceRef.current);
-  }, [query, search]);
+  }, [query, search, pin]);
 
   const pickResult = (r: GeoResult) => {
     const name = [r.name, r.admin1, r.country].filter(Boolean).join(", ");
