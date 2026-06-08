@@ -152,21 +152,23 @@ const WeatherChart = ({ models, parameter, enabledModels, showArea = false }: We
               <Area
                 type="monotone"
                 dataKey="Average"
-                stroke="hsl(0, 0%, 100%)"
+                stroke="hsl(50, 100%, 75%)"
                 fill="none"
-                strokeWidth={2}
-                strokeDasharray="6 3"
+                strokeWidth={3}
+                strokeDasharray="8 3"
                 dot={false}
+                style={{ filter: "drop-shadow(0 0 4px hsl(50 100% 60% / 0.55))" }}
               />
             ) : (
               <Line
                 type="monotone"
                 dataKey="Average"
-                stroke="hsl(0, 0%, 100%)"
-                strokeWidth={2}
-                strokeDasharray="6 3"
+                stroke="hsl(50, 100%, 75%)"
+                strokeWidth={3}
+                strokeDasharray="8 3"
                 dot={false}
-                activeDot={{ r: 3, strokeWidth: 0 }}
+                activeDot={{ r: 4, strokeWidth: 0 }}
+                style={{ filter: "drop-shadow(0 0 4px hsl(50 100% 60% / 0.55))" }}
               />
             )
           )}
