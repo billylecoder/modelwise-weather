@@ -107,12 +107,12 @@ export const parameterConfig: Record<WeatherParam, { label: string; unit: string
   snowDepth: { label: "Snow Depth", unit: "cm", icon: "Snowflake" },
   windDirection: { label: "Wind Direction", unit: "°", icon: "Compass" },
   lightning: { label: "Lightning Pot.", unit: "J/kg", icon: "Zap" },
-  liftedIndex: { label: "Lifted Index", unit: "K", icon: "Thermometer" },
+  liftedIndex: { label: "Lifted Index", unit: "K", icon: "Activity" },
   cin: { label: "CIN", unit: "J/kg", icon: "Zap" },
-  shear0_1km: { label: "0–1km Shear", unit: "km/h", icon: "Wind" },
-  shear0_3km: { label: "0–3km Shear", unit: "km/h", icon: "Wind" },
-  shear0_6km: { label: "0–6km Shear", unit: "km/h", icon: "Wind" },
-  freezingLevel: { label: "Freezing Lvl", unit: "m", icon: "Snowflake" },
+  shear0_1km: { label: "Shear 0–1km", unit: "km/h", icon: "Wind" },
+  shear0_3km: { label: "Shear 0–3km", unit: "km/h", icon: "Wind" },
+  shear0_6km: { label: "Shear 0–6km", unit: "km/h", icon: "Wind" },
+  freezingLevel: { label: "Freezing Level", unit: "m", icon: "Snowflake" },
 };
 
 
@@ -182,6 +182,21 @@ const MODEL_DEFS: ModelConfig[] = [
       { hour: 12, maxHours: 240 },
     ],
     delayHours: 6,
+    hardCapHours: 240,
+  },
+  {
+    // ECMWF AIFS — Open-Meteo model id "ecmwf_aifs025". Runs 4x/day, 240h horizon.
+    // Some parameters (e.g. CAPE, pressure-level winds) may be absent — values will be null.
+    id: "ecmwf_aifs025",
+    name: "AIFS",
+    color: "hsl(320, 80%, 65%)",
+    runs: [
+      { hour: 0,  maxHours: 240 },
+      { hour: 6,  maxHours: 240 },
+      { hour: 12, maxHours: 240 },
+      { hour: 18, maxHours: 240 },
+    ],
+    delayHours: 7,
     hardCapHours: 240,
   },
 ];

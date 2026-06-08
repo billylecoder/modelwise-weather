@@ -1,9 +1,9 @@
 import { WeatherParam, parameterConfig } from "@/data/weatherApi";
 import { useI18n, paramTranslationKey } from "@/i18n";
-import { Thermometer, CloudRain, Wind, Gauge, Droplets, Zap, Cloud, Snowflake, Sun, Compass } from "lucide-react";
+import { Thermometer, CloudRain, Wind, Gauge, Droplets, Zap, Cloud, Snowflake, Sun, Compass, Activity } from "lucide-react";
 
 const iconMap: Record<string, React.ComponentType<React.SVGProps<SVGSVGElement>>> = {
-  Thermometer, CloudRain, Wind, Gauge, Droplets, Zap, Cloud, Snowflake, Sun, Compass,
+  Thermometer, CloudRain, Wind, Gauge, Droplets, Zap, Cloud, Snowflake, Sun, Compass, Activity,
 };
 
 interface ParameterSelectorProps {
@@ -15,8 +15,9 @@ const ParameterSelector = ({ selected, onChange }: ParameterSelectorProps) => {
   const { t } = useI18n();
   // Wind direction is shown in the model card grid (with arrow), but not in
   // the multi-model comparison chart — averaging degrees as a line is misleading.
+  // Lightning Potential is hidden from the chart UI (removed per product decision).
   const params = (Object.entries(parameterConfig) as [WeatherParam, typeof parameterConfig[WeatherParam]][])
-    .filter(([key]) => key !== "windDirection");
+    .filter(([key]) => key !== "windDirection" && key !== "lightning");
 
   return (
     <div className="flex flex-wrap gap-1.5">

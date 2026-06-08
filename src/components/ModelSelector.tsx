@@ -1,23 +1,24 @@
 import { useState } from "react";
 import { ModelForecast, parameterConfig, WeatherParam } from "@/data/weatherApi";
-import { Thermometer, CloudRain, Snowflake, Wind, Gauge, Droplets, Zap, Cloud, Sun, Compass } from "lucide-react";
+import { Thermometer, CloudRain, Snowflake, Wind, Gauge, Droplets, Zap, Cloud, Sun, Compass, Activity } from "lucide-react";
 import { useI18n, paramTranslationKey } from "@/i18n";
 import { useUnits } from "@/contexts/UnitsContext";
 import { formatValue, getUnitLabel } from "@/lib/units";
 import { degToCardinal } from "@/lib/wind";
 
 const iconMap: Record<string, React.ComponentType<React.SVGProps<SVGSVGElement>>> = {
-  Thermometer, CloudRain, Wind, Gauge, Droplets, Zap, Cloud, Snowflake, Sun, Compass,
+  Thermometer, CloudRain, Wind, Gauge, Droplets, Zap, Cloud, Snowflake, Sun, Compass, Activity,
 };
 
 const BASIC_PARAMS: WeatherParam[] = [
   "temperature", "apparentTemperature", "precipitation", "windSpeed", "humidity", "cloudCover", "snowfall", "windDirection",
 ];
+// Rain Total + Snow Depth placed side-by-side (positions 0 & 1 in a 4-col grid).
 const ADVANCED_PARAMS: WeatherParam[] = [
-  "precipitationTotal", "windGusts", "pressure", "dewPoint", "cape", "lightning", "temp850hPa", "temp500hPa", "snowDepth",
+  "precipitationTotal", "snowDepth", "windGusts", "pressure", "dewPoint", "temp850hPa", "temp500hPa", "freezingLevel",
 ];
 const SEVERE_PARAMS: WeatherParam[] = [
-  "cape", "lightning", "liftedIndex", "cin", "shear0_1km", "shear0_3km", "shear0_6km", "freezingLevel",
+  "cape", "liftedIndex", "cin", "shear0_1km", "shear0_3km", "shear0_6km",
 ];
 
 interface ModelSelectorProps {
