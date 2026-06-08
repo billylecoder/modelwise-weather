@@ -59,25 +59,63 @@ const NHC_CARDS: OutlookCard[] = [
   },
 ];
 
-// General climate / global ocean state — current imagery from NOAA CPC + OSPO + NSIDC.
-const CLIMATE_CARDS: OutlookCard[] = [
+// Text-only links — these products (ENSO indices, SST anomaly maps, MJO phase
+// diagrams) don't lend themselves to a single static thumbnail, so we link out.
+interface TextLink {
+  title: string;
+  description: string;
+  href: string;
+}
+
+const CLIMATE_LINKS: TextLink[] = [
   {
-    title: "ENSO — Niño 3.4 SST Index",
-    img: "https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/enso_advisory/figures/figure1.png",
+    title: "ENSO — El Niño / La Niña status",
+    description: "NOAA CPC official ENSO diagnostic discussion (Niño 3.4 SST index, model plumes).",
     href: "https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/enso_advisory/ensodisc.shtml",
-    alt: "Current El Niño / La Niña status — Niño 3.4 SST anomaly index",
   },
   {
     title: "Global Sea Surface Temperature Anomaly",
-    img: "https://www.ospo.noaa.gov/data/sst/anomaly/anomnight.current.gif",
-    href: "https://www.ospo.noaa.gov/data/sst/anomaly/",
-    alt: "NOAA global SST anomaly — most recent nightly composite",
+    description: "Climate Reanalyzer daily global SST anomaly map (NOAA OISST v2.1, updated daily).",
+    href: "https://climatereanalyzer.org/clim/sst_daily/",
   },
   {
-    title: "MJO — Wheeler-Hendon Phase Diagram",
-    img: "https://www.cpc.ncep.noaa.gov/products/precip/CWlink/MJO/CLIVAR/clivar_wh.gif",
+    title: "MJO — Wheeler-Hendon phase diagram",
+    description: "Madden-Julian Oscillation index and forecast — NOAA CPC.",
     href: "https://www.cpc.ncep.noaa.gov/products/precip/CWlink/MJO/whindex.shtml",
-    alt: "Madden-Julian Oscillation Wheeler-Hendon phase-space diagram",
+  },
+  {
+    title: "NOAA Climate Prediction Center",
+    description: "6-10 day, 8-14 day, monthly and seasonal temperature & precipitation outlooks.",
+    href: "https://www.cpc.ncep.noaa.gov/",
+  },
+];
+
+// Wetterzentrale ensemble chart pages — public viewer, deep-linking is permitted.
+const ENSEMBLE_LINKS: TextLink[] = [
+  {
+    title: "ECMWF EPS (51 members)",
+    description: "ECMWF ensemble charts — spaghetti, mean & spread on Wetterzentrale.",
+    href: "https://www.wetterzentrale.de/en/topkarten.php?model=ens",
+  },
+  {
+    title: "GEFS (31 members)",
+    description: "NOAA Global Ensemble Forecast System on Wetterzentrale.",
+    href: "https://www.wetterzentrale.de/en/topkarten.php?model=gens",
+  },
+  {
+    title: "ICON-EPS (40 members)",
+    description: "DWD ICON ensemble on Wetterzentrale.",
+    href: "https://www.wetterzentrale.de/en/topkarten.php?model=icone",
+  },
+  {
+    title: "GEM / CMC ensemble (21 members)",
+    description: "Environment Canada ensemble on Wetterzentrale.",
+    href: "https://www.wetterzentrale.de/en/topkarten.php?model=cmce",
+  },
+  {
+    title: "AIFS (deterministic AI model)",
+    description: "ECMWF AIFS charts (no public ensemble yet — deterministic only).",
+    href: "https://charts.ecmwf.int/products/aifs_medium-mslp-wind850?base_time=latest",
   },
 ];
 
