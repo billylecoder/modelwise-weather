@@ -149,6 +149,29 @@ function OutlookGrid({ cards, bust }: { cards: OutlookCard[]; bust: number }) {
   );
 }
 
+function LinkList({ links }: { links: TextLink[] }) {
+  return (
+    <ul className="divide-y divide-border/30 rounded-xl border border-border/40 overflow-hidden">
+      {links.map((l) => (
+        <li key={l.href}>
+          <a
+            href={l.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-start gap-3 px-3 py-2.5 hover:bg-muted/30 transition-colors group"
+          >
+            <div className="flex-1 min-w-0">
+              <div className="font-heading font-medium text-xs">{l.title}</div>
+              <p className="text-[11px] text-muted-foreground font-body mt-0.5 leading-snug">{l.description}</p>
+            </div>
+            <ExternalLink className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors shrink-0 mt-0.5" />
+          </a>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export default function NoaaOutlooks() {
   const { t } = useI18n();
   const [bust, setBust] = useState(() => Date.now());
