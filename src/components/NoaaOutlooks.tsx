@@ -244,7 +244,24 @@ export default function NoaaOutlooks() {
             cpc.ncep.noaa.gov <ExternalLink className="w-3 h-3" />
           </a>
         </div>
-        <OutlookGrid cards={CLIMATE_CARDS} bust={bust} />
+        <LinkList links={CLIMATE_LINKS} />
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <h3 className="font-heading font-medium text-xs uppercase tracking-wide text-muted-foreground">
+            Ensembles
+          </h3>
+          <a
+            href="https://www.wetterzentrale.de/en/topkarten.php"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[11px] text-primary hover:underline flex items-center gap-1"
+          >
+            wetterzentrale.de <ExternalLink className="w-3 h-3" />
+          </a>
+        </div>
+        <LinkList links={ENSEMBLE_LINKS} />
       </div>
     </section>
   );
