@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Cloud, Layers, RefreshCw, Loader2, AlertTriangle, Home } from "lucide-react";
-import { WeatherParam, Location, ModelForecast, AirInfo } from "@/data/weatherApi";
+import { WeatherParam, Location, ModelForecast, AirInfo, parameterConfig } from "@/data/weatherApi";
 import { fetchWeatherData } from "@/data/weatherApi";
 import WeatherChart from "@/components/WeatherChart";
 import ModelConfidence from "@/components/ModelAgreement";
