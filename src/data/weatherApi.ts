@@ -184,6 +184,21 @@ const MODEL_DEFS: ModelConfig[] = [
     delayHours: 6,
     hardCapHours: 240,
   },
+  {
+    // ECMWF AIFS — Open-Meteo model id "ecmwf_aifs025". Runs 4x/day, 240h horizon.
+    // Some parameters (e.g. CAPE, pressure-level winds) may be absent — values will be null.
+    id: "ecmwf_aifs025",
+    name: "AIFS",
+    color: "hsl(320, 80%, 65%)",
+    runs: [
+      { hour: 0,  maxHours: 240 },
+      { hour: 6,  maxHours: 240 },
+      { hour: 12, maxHours: 240 },
+      { hour: 18, maxHours: 240 },
+    ],
+    delayHours: 7,
+    hardCapHours: 240,
+  },
 ];
 
 function formatRun(runHour: number): string {
