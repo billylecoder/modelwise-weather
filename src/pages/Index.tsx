@@ -113,7 +113,8 @@ const Index = () => {
 
   const getParamLabel = (param: WeatherParam) => {
     const key = paramTranslationKey[param];
-    return key ? t(key) : param;
+    if (key) return t(key);
+    return parameterConfig[param]?.label ?? param;
   };
 
   if (!location) {
