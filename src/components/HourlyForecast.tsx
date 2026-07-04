@@ -1,16 +1,6 @@
 import { useMemo } from "react";
 import { ModelForecast } from "@/data/weatherApi";
 import {
-  CloudDrizzle,
-  CloudRain,
-  CloudRainWind,
-  CloudSun,
-  Cloud,
-  Cloudy,
-  Sun,
-  Wind,
-} from "lucide-react";
-import {
   summarizeHour,
   rainLevel,
   cloudLevel,
@@ -28,6 +18,40 @@ interface HourlyForecastProps {
   dataStartTime?: string;
 }
 
+// Very rough day/night heuristic — no sunrise data available inline.
+// 06:00–19:59 = day, else night. Good enough for the emoji swap.
+function isNightHour(h: number): boolean {
+  return h < 6 || h >= 20;
+}
+
+function pickHourEmoji(
+  h: { precip: number | null; cloud: number | null; wind: number | null; gusts: number | null; snow?: number | null },
+  night: boolean
+): string {
+  const rl = h.precip != null ? rainLevel(h.precip) : "none";
+  const cl = h.cloud != null ? cloudLevel(h.cloud) : "sunny";
+  const snowing = (h.snow ?? 0) > 0.05;
+
+  if (snowing) return "🌨️";
+  if (rl === "torrential" || rl === "heavy") return "⛈️";
+  if (rl === "moderate") return "🌧️";
+  if (rl === "light") return night ? "🌧️" : "🌦️";
+  if (rl === "drizzle") return night ? "🌧️" : "🌦️";
+
+  if (shouldShowWind(h.wind, h.gusts)) return "💨";
+
+  if (night) {
+    if (cl === "sunny") return "🌙";
+    if (cl === "partly") return "🌙";
+    if (cl === "mostly") return "☁️";
+    return "☁️";
+  }
+  if (cl === "sunny") return "☀️";
+  if (cl === "partly") return "🌤️";
+  if (cl === "mostly") return "⛅";
+  return "☁️";
+}
+
 const HourlyForecast = ({ models, enabledModels, dataStartTime }: HourlyForecastProps) => {
   const { units } = useUnits();
   const { t } = useI18n();
@@ -37,37 +61,29 @@ const HourlyForecast = ({ models, enabledModels, dataStartTime }: HourlyForecast
     [dataStartTime]
   );
 
-  // Find the index closest to "now" in the location's local timezone.
   const startIdx = useMemo(() => {
     if (!base || models.length === 0) return 0;
     const hours = models[0].hours;
     const now = new Date();
-    // Treat browser-local now as wall-clock for comparison purposes.
-    // It's an approximation, but acceptable since we just need the right hour bucket.
     const target = {
       year: now.getFullYear(),
       month: now.getMonth() + 1,
       day: now.getDate(),
       hour: now.getHours(),
-      minute: 0,
     };
     let best = 0;
     let bestDiff = Infinity;
     for (let i = 0; i < hours.length; i++) {
-      const t = addHoursNaive(base, hours[i]);
+      const tt = addHoursNaive(base, hours[i]);
       const diff = Math.abs(
-        Date.UTC(t.year, t.month - 1, t.day, t.hour) -
+        Date.UTC(tt.year, tt.month - 1, tt.day, tt.hour) -
           Date.UTC(target.year, target.month - 1, target.day, target.hour)
       );
-      if (diff < bestDiff) {
-        bestDiff = diff;
-        best = i;
-      }
+      if (diff < bestDiff) { bestDiff = diff; best = i; }
     }
     return best;
   }, [base, models]);
 
-  // Use ECMWF as the source-of-truth for hourly forecasts (fallback: enabled models)
   const sourceModels = useMemo(() => {
     const ecmwf = models.find((m) => m.model === "ECMWF");
     return ecmwf ? ["ECMWF"] : enabledModels;
@@ -77,7 +93,14 @@ const HourlyForecast = ({ models, enabledModels, dataStartTime }: HourlyForecast
     const result = [];
     const total = models[0]?.hours.length ?? 0;
     for (let i = startIdx; i < Math.min(startIdx + 24, total); i++) {
-      result.push(summarizeHour(models, sourceModels, i));
+      const summary = summarizeHour(models, sourceModels, i);
+      // Attach snowfall if available
+      const snowVals = models
+        .filter((m) => sourceModels.includes(m.model))
+        .map((m) => (m.snowfall as (number | null)[] | undefined)?.[i])
+        .filter((v): v is number => v != null);
+      const snow = snowVals.length ? snowVals.reduce((a, b) => a + b, 0) / snowVals.length : null;
+      result.push({ ...summary, snow });
     }
     return result;
   }, [models, sourceModels, startIdx]);
@@ -95,14 +118,14 @@ const HourlyForecast = ({ models, enabledModels, dataStartTime }: HourlyForecast
         <div className="flex gap-2 px-2 min-w-max">
           {hours.map((h) => {
             const time = addHoursNaive(base, models[0].hours[h.hourIdx]);
-            const Icon = pickHourIcon(h);
+            const night = isNightHour(time.hour);
+            const emoji = pickHourEmoji(h, night);
             const tempC = h.temp;
             const tempDisplay =
               tempC != null
                 ? roundHalfUp(convertValue(tempC, "temperature", units) ?? tempC)
                 : null;
             const humDisplay = h.humidity != null ? roundHalfUp(h.humidity) : null;
-            const cloudDisplay = h.cloud != null ? roundHalfUp(h.cloud) : null;
             const windDisplay =
               h.wind != null
                 ? smartRound(convertValue(h.wind, "windSpeed", units) ?? h.wind, "windSpeed", units)
@@ -118,30 +141,27 @@ const HourlyForecast = ({ models, enabledModels, dataStartTime }: HourlyForecast
             return (
               <div
                 key={h.hourIdx}
-                className="flex flex-col items-center gap-1 px-2.5 py-2 rounded-lg bg-muted/20 border border-border/30 min-w-[64px]"
+                className="flex flex-col items-center gap-1 px-2.5 py-2 rounded-lg bg-muted/20 border border-border/30 min-w-[80px]"
               >
                 <span className="text-[10px] text-muted-foreground font-body">
-                  {String(time.hour).padStart(2, "0")}h
+                  {String(time.hour).padStart(2, "0")}:00
                 </span>
-                <Icon className="w-5 h-5 text-primary" />
+                <span className="text-2xl leading-none py-0.5" aria-hidden="true">{emoji}</span>
                 <span className="font-heading font-bold text-sm">
                   {tempDisplay != null ? `${tempDisplay}${tempUnit}` : "-"}
                 </span>
                 <span className="text-[10px] text-muted-foreground font-body">
                   {precipDisplay != null && precipDisplay > 0
-                    ? `${precipDisplay}${precipUnit}`
-                    : cloudDisplay != null
-                    ? `${cloudDisplay}%`
-                    : "-"}
+                    ? `${precipDisplay} ${precipUnit} rain`
+                    : "0% rain"}
                 </span>
                 {windDisplay != null && (
-                  <span className="text-[10px] text-muted-foreground font-body flex items-center gap-0.5">
-                    <Wind className="w-2.5 h-2.5" />
-                    {windDisplay}
+                  <span className="text-[10px] text-muted-foreground font-body">
+                    {windDisplay} {windUnit}
                   </span>
                 )}
                 <span className="text-[10px] text-muted-foreground font-body">
-                  {humDisplay != null ? `${humDisplay}%` : ""}
+                  {humDisplay != null ? `${humDisplay}% hum.` : ""}
                 </span>
               </div>
             );
@@ -151,21 +171,5 @@ const HourlyForecast = ({ models, enabledModels, dataStartTime }: HourlyForecast
     </div>
   );
 };
-
-function pickHourIcon(h: { precip: number | null; cloud: number | null; wind: number | null; gusts: number | null }) {
-  const rl = h.precip != null ? rainLevel(h.precip) : "none";
-  const cl = h.cloud != null ? cloudLevel(h.cloud) : "sunny";
-  // Priority: precipitation > light → rain symbol overrides clouds
-  if (rl === "torrential" || rl === "heavy") return CloudRainWind;
-  if (rl === "moderate") return CloudRain;
-  if (rl === "light") return CloudRain;
-  if (rl === "drizzle") return CloudDrizzle;
-  // Wind icon takes precedence over plain cloud display when very windy
-  if (shouldShowWind(h.wind, h.gusts)) return Wind;
-  if (cl === "sunny") return Sun;
-  if (cl === "partly") return CloudSun;
-  if (cl === "mostly") return Cloud;
-  return Cloudy;
-}
 
 export default HourlyForecast;
