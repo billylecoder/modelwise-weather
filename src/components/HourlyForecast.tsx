@@ -42,7 +42,7 @@ function pickHourEmoji(
 
   if (night) {
     if (cl === "sunny") return "🌙";
-    if (cl === "partly") return "🌤️".replace("☀️", "🌙") /* fallback */ || "☁️";
+    if (cl === "partly") return "🌙";
     if (cl === "mostly") return "☁️";
     return "☁️";
   }
