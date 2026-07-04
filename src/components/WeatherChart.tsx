@@ -54,8 +54,6 @@ const WeatherChart = ({ models, parameter, enabledModels, showArea = false }: We
 
   const yDomain = useMemo<[number | string, number | string]>(() => {
     if (parameter === "pressure") {
-      // Default 990–1030; expand outward to nearest multiple of 5 using floor/ceil
-      // (e.g. 982 → 980 low, 1043 → 1045 high, 973 → 970 low).
       let min = 990;
       let max = 1030;
       data.forEach((p) => {
@@ -75,6 +73,19 @@ const WeatherChart = ({ models, parameter, enabledModels, showArea = false }: We
         });
       });
       return [0, max];
+    }
+    if (parameter === "precipitation" || parameter === "snowfall") {
+      // Keep a minimum visible ceiling of 1 mm so tiny values (0.06 mm) don't
+      // dominate the axis — the line will sit near the bottom instead of
+      // stretching to fill the chart. Very small values still render as a
+      // small blip near y=0.
+      let max = 1;
+      data.forEach((p) => {
+        Object.entries(p).forEach(([k, v]) => {
+          if (k !== "hour" && typeof v === "number" && v > max) max = v;
+        });
+      });
+      return [0, Math.ceil(max)];
     }
     return ["auto", "auto"];
   }, [data, parameter]);
