@@ -19,7 +19,7 @@ import {
 } from "@/lib/forecastSymbols";
 import { useUnits } from "@/contexts/UnitsContext";
 import { convertValue, smartRound, getUnitLabel } from "@/lib/units";
-import { parseLocalNaiveISO, addHoursNaive, formatDateShort } from "@/lib/time";
+import { parseLocalNaiveISO, addHoursNaive, formatDateShortLocalized } from "@/lib/time";
 import { useI18n } from "@/i18n";
 
 interface DailyForecastProps {
@@ -41,7 +41,7 @@ interface DaySummary {
 
 const DailyForecast = ({ models, enabledModels, dataStartTime }: DailyForecastProps) => {
   const { units } = useUnits();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
 
   const base = useMemo(
     () => (dataStartTime ? parseLocalNaiveISO(dataStartTime) : null),
@@ -80,7 +80,7 @@ const DailyForecast = ({ models, enabledModels, dataStartTime }: DailyForecastPr
       const firstHour = idxs[0];
       const t = addHoursNaive(base, hoursArr[firstHour]);
       return {
-        dateLabel: formatDateShort(t),
+        dateLabel: formatDateShortLocalized(t, lang),
         tempLow: temps.length ? Math.min(...temps) : null,
         tempHigh: temps.length ? Math.max(...temps) : null,
         precipTotal: precip,
@@ -90,7 +90,7 @@ const DailyForecast = ({ models, enabledModels, dataStartTime }: DailyForecastPr
         hasAnyData: temps.length > 0,
       };
     }).filter((d) => d.hasAnyData);
-  }, [base, models, enabledModels]);
+  }, [base, models, enabledModels, lang]);
 
   if (days.length === 0) return null;
 
