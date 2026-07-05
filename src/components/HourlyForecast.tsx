@@ -152,8 +152,8 @@ const HourlyForecast = ({ models, enabledModels, dataStartTime }: HourlyForecast
                 </span>
                 <span className="text-[10px] text-muted-foreground font-body">
                   {precipDisplay != null && precipDisplay > 0
-                    ? `${precipDisplay} ${precipUnit} rain`
-                    : "0% rain"}
+                    ? `${precipDisplay} ${precipUnit} ${t("unitRain")}`
+                    : `0% ${t("unitRain")}`}
                 </span>
                 {windDisplay != null && (
                   <span className="text-[10px] text-muted-foreground font-body">
@@ -161,7 +161,7 @@ const HourlyForecast = ({ models, enabledModels, dataStartTime }: HourlyForecast
                   </span>
                 )}
                 <span className="text-[10px] text-muted-foreground font-body">
-                  {humDisplay != null ? `${humDisplay}% hum.` : ""}
+                  {humDisplay != null ? `${humDisplay}% ${t("unitHumShort")}` : ""}
                 </span>
               </div>
             );
