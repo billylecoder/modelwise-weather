@@ -242,6 +242,11 @@ const es = partial({
   confirmLocation: "Usar esta ubicación",
   changeLocation: "Cambiar ubicación",
   credits: "Créditos",
+  severe: "Severos",
+  shear: "Cizalladura",
+  unitRain: "lluvia",
+  unitHumShort: "hum.",
+  noRainShort: "sin lluvia",
 });
 
 const fr = partial({
@@ -295,6 +300,11 @@ const fr = partial({
   confirmLocation: "Utiliser cet endroit",
   changeLocation: "Changer de lieu",
   credits: "Crédits",
+  severe: "Sévère",
+  shear: "Cisaillement",
+  unitRain: "pluie",
+  unitHumShort: "hum.",
+  noRainShort: "pas de pluie",
 });
 
 const de = partial({
@@ -348,6 +358,11 @@ const de = partial({
   confirmLocation: "Diesen Ort verwenden",
   changeLocation: "Ort ändern",
   credits: "Quellen",
+  severe: "Unwetter",
+  shear: "Scherung",
+  unitRain: "Regen",
+  unitHumShort: "Feu.",
+  noRainShort: "kein Regen",
 });
 
 const it = partial({
@@ -401,6 +416,11 @@ const it = partial({
   confirmLocation: "Usa questa posizione",
   changeLocation: "Cambia posizione",
   credits: "Crediti",
+  severe: "Severi",
+  shear: "Shear",
+  unitRain: "pioggia",
+  unitHumShort: "um.",
+  noRainShort: "no pioggia",
 });
 
 const pt = partial({
@@ -454,6 +474,11 @@ const pt = partial({
   confirmLocation: "Usar este local",
   changeLocation: "Alterar local",
   credits: "Créditos",
+  severe: "Severos",
+  shear: "Cisalhamento",
+  unitRain: "chuva",
+  unitHumShort: "hum.",
+  noRainShort: "sem chuva",
 });
 
 const nl = partial({
