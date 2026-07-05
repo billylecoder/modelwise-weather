@@ -147,20 +147,22 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-xl sticky top-0 z-50">
-        <div className="max-w-[1400px] mx-auto px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center glow-primary">
+        <div className="max-w-[1400px] mx-auto px-3 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-y-2 gap-x-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl gradient-primary flex items-center justify-center glow-primary shrink-0">
               <Cloud className="w-5 h-5 text-primary-foreground" />
             </div>
-            <div>
-              <h1 className="font-heading font-bold text-base leading-tight text-gradient">{t("appName")}</h1>
-              <p className="text-[10px] text-muted-foreground font-body">{t("appSubtitle")}</p>
+            <div className="min-w-0">
+              <h1 className="font-heading font-bold text-sm sm:text-base leading-tight text-gradient truncate">{t("appName")}</h1>
+              <p className="text-[10px] text-muted-foreground font-body truncate">{t("appSubtitle")}</p>
             </div>
           </div>
 
-          <LocationSearch currentLocation={location} onSelectLocation={updateLocation} />
+          <div className="order-3 w-full sm:order-none sm:w-auto sm:flex-1 sm:max-w-md sm:mx-4">
+            <LocationSearch currentLocation={location} onSelectLocation={updateLocation} />
+          </div>
 
-          <div className="flex items-center gap-4 text-xs text-muted-foreground font-body">
+          <div className="flex items-center gap-3 sm:gap-4 text-xs text-muted-foreground font-body flex-wrap justify-end">
             <button
               onClick={goHome}
               className="flex items-center gap-1.5 hover:text-foreground transition-colors"
@@ -180,7 +182,7 @@ const Index = () => {
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
               <span>{timeSinceRefresh()}</span>
             </button>
-            <div className="flex items-center gap-1.5">
+            <div className="hidden md:flex items-center gap-1.5">
               <Layers className="w-3.5 h-3.5" />
               <span>{models.length} {t("models")}</span>
             </div>
@@ -189,7 +191,7 @@ const Index = () => {
       </header>
 
       {/* Main content */}
-      <div className="max-w-[1400px] mx-auto px-6 py-6 space-y-5">
+      <div className="max-w-[1400px] mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-5">
         {/* Tabs */}
         <div className="flex gap-2 border-b border-border/40">
           {([
@@ -222,7 +224,7 @@ const Index = () => {
         {activeTab === "forecast" && (
           <>
             {/* Top row */}
-            <div className="grid grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <ForecastTimeline
                 value={timelineIndex}
                 max={(models[0]?.hours.length ?? 1) - 1}
@@ -247,7 +249,8 @@ const Index = () => {
             )}
 
             {/* Model data */}
-            <div className="glass-card rounded-xl p-5">
+            <div className="glass-card rounded-xl p-3 sm:p-5">
+
               <h2 className="font-heading font-semibold text-sm mb-4">{t("modelData")}</h2>
               <ModelSelector
                 models={models}
@@ -262,8 +265,8 @@ const Index = () => {
             <DailyForecast models={models} enabledModels={enabledModels} dataStartTime={dataStartTime} />
 
             {/* Chart controls */}
-            <div className="glass-card rounded-xl p-5">
-              <div className="flex items-center justify-between mb-4">
+            <div className="glass-card rounded-xl p-3 sm:p-5">
+              <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
                 <h2 className="font-heading font-semibold text-sm">{t("multiModelComparison")}</h2>
                 <ModelToggle models={models} enabledModels={enabledModels} onToggle={toggleModel} />
               </div>
