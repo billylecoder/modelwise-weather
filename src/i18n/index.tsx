@@ -105,6 +105,11 @@ const en = {
   noaaOutlooksSubtitle: "Live convective and tropical outlooks straight from NOAA SPC and NHC.",
   spcOutlooks: "SPC Convective Outlooks",
   nhcOutlooks: "NHC Tropical Outlooks",
+  severe: "Severe",
+  shear: "Shear",
+  unitRain: "rain",
+  unitHumShort: "hum.",
+  noRainShort: "no rain",
 };
 
 type TranslationKey = keyof typeof en;
@@ -179,6 +184,11 @@ const el = partial({
   noaaOutlooksTitle: "Προοπτικές NOAA",
   spcOutlooks: "Προοπτικές Καταιγίδων SPC",
   nhcOutlooks: "Τροπικές Προοπτικές NHC",
+  severe: "Ακραία",
+  shear: "Διάτμηση",
+  unitRain: "βροχή",
+  unitHumShort: "υγρ.",
+  noRainShort: "χωρίς βροχή",
 });
 
 const es = partial({
@@ -232,6 +242,11 @@ const es = partial({
   confirmLocation: "Usar esta ubicación",
   changeLocation: "Cambiar ubicación",
   credits: "Créditos",
+  severe: "Severos",
+  shear: "Cizalladura",
+  unitRain: "lluvia",
+  unitHumShort: "hum.",
+  noRainShort: "sin lluvia",
 });
 
 const fr = partial({
@@ -285,6 +300,11 @@ const fr = partial({
   confirmLocation: "Utiliser cet endroit",
   changeLocation: "Changer de lieu",
   credits: "Crédits",
+  severe: "Sévère",
+  shear: "Cisaillement",
+  unitRain: "pluie",
+  unitHumShort: "hum.",
+  noRainShort: "pas de pluie",
 });
 
 const de = partial({
@@ -338,6 +358,11 @@ const de = partial({
   confirmLocation: "Diesen Ort verwenden",
   changeLocation: "Ort ändern",
   credits: "Quellen",
+  severe: "Unwetter",
+  shear: "Scherung",
+  unitRain: "Regen",
+  unitHumShort: "Feu.",
+  noRainShort: "kein Regen",
 });
 
 const it = partial({
@@ -391,6 +416,11 @@ const it = partial({
   confirmLocation: "Usa questa posizione",
   changeLocation: "Cambia posizione",
   credits: "Crediti",
+  severe: "Severi",
+  shear: "Shear",
+  unitRain: "pioggia",
+  unitHumShort: "um.",
+  noRainShort: "no pioggia",
 });
 
 const pt = partial({
@@ -444,6 +474,11 @@ const pt = partial({
   confirmLocation: "Usar este local",
   changeLocation: "Alterar local",
   credits: "Créditos",
+  severe: "Severos",
+  shear: "Cisalhamento",
+  unitRain: "chuva",
+  unitHumShort: "hum.",
+  noRainShort: "sem chuva",
 });
 
 const nl = partial({

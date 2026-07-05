@@ -59,7 +59,7 @@ const ModelSelector = ({ models, selectedModel, onSelectModel, forecastHour }: M
   }
 
   const renderParams = (params: WeatherParam[]) => (
-    <div className="grid grid-cols-4 gap-2">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
       {params.map((param) => {
         const config = parameterConfig[param];
         const Icon = config.icon ? iconMap[config.icon] : null;
@@ -70,6 +70,9 @@ const ModelSelector = ({ models, selectedModel, onSelectModel, forecastHour }: M
           : formatValue(rawValue as number | null | undefined, param, units);
         const unitLabel = isWindDir ? "" : getUnitLabel(param, units, config.unit);
         const translationKey = paramTranslationKey[param];
+        // Localize "Shear 0–XKm" labels: swap the word "Shear" for its translation.
+        const shearMatch = /^Shear\s+(.+)$/i.exec(config.label);
+        const localizedLabel = shearMatch ? `${t("shear")} ${shearMatch[1]}` : config.label;
 
         return (
           <div key={param} className="glass-card rounded-xl p-3 text-center">
@@ -86,7 +89,7 @@ const ModelSelector = ({ models, selectedModel, onSelectModel, forecastHour }: M
             <div className="font-heading font-bold text-lg">{displayValue}</div>
             <div className="text-[10px] text-muted-foreground font-body">{unitLabel || (isWindDir && rawValue != null ? `${Math.round(rawValue as number)}°` : "")}</div>
             <div className="text-[10px] text-muted-foreground font-body mt-0.5">
-              {translationKey ? t(translationKey) : config.label}
+              {translationKey ? t(translationKey) : localizedLabel}
             </div>
           </div>
         );
@@ -101,14 +104,14 @@ const ModelSelector = ({ models, selectedModel, onSelectModel, forecastHour }: M
   return (
     <div className="space-y-3">
       {/* Model tabs */}
-      <div className="flex gap-1.5">
+      <div className="flex flex-wrap gap-1.5">
         {models.map((m) => {
           const isActive = m.model === selectedModel;
           return (
             <button
               key={m.model}
               onClick={() => onSelectModel(m.model)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-heading font-semibold transition-all flex-1 justify-center ${
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-heading font-semibold transition-all flex-1 min-w-[80px] justify-center ${
                 isActive
                   ? "border-transparent shadow-lg"
                   : "border border-border/50 opacity-50 hover:opacity-80 bg-muted/20"
@@ -143,7 +146,7 @@ const ModelSelector = ({ models, selectedModel, onSelectModel, forecastHour }: M
         {([
           { id: "basic" as const, label: t("basic") },
           { id: "advanced" as const, label: t("advanced") },
-          { id: "severe" as const, label: "Severe" },
+          { id: "severe" as const, label: t("severe") },
         ]).map((tab) => {
           const active = view === tab.id;
           return (

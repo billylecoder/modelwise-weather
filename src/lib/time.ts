@@ -49,6 +49,22 @@ export function formatDateShort(t: ParsedNaive): string {
   return `${WEEKDAYS_EN[wd]} ${String(t.day).padStart(2, "0")} ${MONTHS_EN[t.month - 1]}`;
 }
 
+// Localized "Sat 04 Jul" using Intl. Falls back to English formatter on error.
+export function formatDateShortLocalized(t: ParsedNaive, lang: string): string {
+  try {
+    const d = new Date(Date.UTC(t.year, t.month - 1, t.day));
+    const fmt = new Intl.DateTimeFormat(lang, {
+      weekday: "short",
+      day: "2-digit",
+      month: "short",
+      timeZone: "UTC",
+    });
+    return fmt.format(d).replace(/,/g, "").replace(/\./g, "");
+  } catch {
+    return formatDateShort(t);
+  }
+}
+
 // Format an X-axis tick: show "HH" for normal hours and "Day HH" at midnight.
 export function formatAxisTick(t: ParsedNaive): string {
   if (t.hour === 0) return formatDateShort(t).slice(0, 6); // e.g. "Mon 18"
