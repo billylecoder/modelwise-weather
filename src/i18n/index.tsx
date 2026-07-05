@@ -105,6 +105,11 @@ const en = {
   noaaOutlooksSubtitle: "Live convective and tropical outlooks straight from NOAA SPC and NHC.",
   spcOutlooks: "SPC Convective Outlooks",
   nhcOutlooks: "NHC Tropical Outlooks",
+  severe: "Severe",
+  shear: "Shear",
+  unitRain: "rain",
+  unitHumShort: "hum.",
+  noRainShort: "no rain",
 };
 
 type TranslationKey = keyof typeof en;
