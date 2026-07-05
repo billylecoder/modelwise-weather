@@ -146,7 +146,7 @@ const ModelSelector = ({ models, selectedModel, onSelectModel, forecastHour }: M
         {([
           { id: "basic" as const, label: t("basic") },
           { id: "advanced" as const, label: t("advanced") },
-          { id: "severe" as const, label: "Severe" },
+          { id: "severe" as const, label: t("severe") },
         ]).map((tab) => {
           const active = view === tab.id;
           return (
