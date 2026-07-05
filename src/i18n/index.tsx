@@ -184,6 +184,11 @@ const el = partial({
   noaaOutlooksTitle: "Προοπτικές NOAA",
   spcOutlooks: "Προοπτικές Καταιγίδων SPC",
   nhcOutlooks: "Τροπικές Προοπτικές NHC",
+  severe: "Ακραία",
+  shear: "Διάτμηση",
+  unitRain: "βροχή",
+  unitHumShort: "υγρ.",
+  noRainShort: "χωρίς βροχή",
 });
 
 const es = partial({
