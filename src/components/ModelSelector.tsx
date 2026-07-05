@@ -59,7 +59,7 @@ const ModelSelector = ({ models, selectedModel, onSelectModel, forecastHour }: M
   }
 
   const renderParams = (params: WeatherParam[]) => (
-    <div className="grid grid-cols-4 gap-2">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
       {params.map((param) => {
         const config = parameterConfig[param];
         const Icon = config.icon ? iconMap[config.icon] : null;
@@ -70,6 +70,9 @@ const ModelSelector = ({ models, selectedModel, onSelectModel, forecastHour }: M
           : formatValue(rawValue as number | null | undefined, param, units);
         const unitLabel = isWindDir ? "" : getUnitLabel(param, units, config.unit);
         const translationKey = paramTranslationKey[param];
+        // Localize "Shear 0–XKm" labels: swap the word "Shear" for its translation.
+        const shearMatch = /^Shear\s+(.+)$/i.exec(config.label);
+        const localizedLabel = shearMatch ? `${t("shear")} ${shearMatch[1]}` : config.label;
 
         return (
           <div key={param} className="glass-card rounded-xl p-3 text-center">
